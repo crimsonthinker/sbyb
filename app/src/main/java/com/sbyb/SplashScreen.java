@@ -7,7 +7,7 @@ import android.os.Bundle;
 import android.view.View;
 
 public class SplashScreen extends AppCompatActivity {
-    private final int splashDisplayLength = 2000; //2 seconds
+    private final int SPLASH_DISPLAY_LENGTH = 2000; //2 seconds
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         //SHOW SPLASH SCREEN
@@ -22,7 +22,7 @@ public class SplashScreen extends AppCompatActivity {
                 startActivity(cameraIntent);
             };
         };
-        waitHandler.postDelayed(cameraActivity,splashDisplayLength);
+        waitHandler.postDelayed(cameraActivity,SPLASH_DISPLAY_LENGTH);
     }
 
     //Immersive mode: Use if you want to hide default buttons
