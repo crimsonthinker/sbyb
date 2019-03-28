@@ -9,7 +9,7 @@
     <!--features-->
     <uses-feature android:name="android.hardware.camera" />
     <uses-feature android:name="android.hardware.location.gps" />
-    <!--Application begin-->
+    <!--Applications-->
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -28,8 +28,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".CameraActivity"
-            android:screenOrientation="landscape">>
+            android:name=".CameraActivity">
 
         </activity>
     </application>

@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.hardware.Camera;
+import android.support.constraint.ConstraintLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -12,7 +13,6 @@ import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
-import android.widget.FrameLayout;
 import android.widget.Toast;
 
 import java.io.IOException;
@@ -30,14 +30,14 @@ public class CameraActivity extends AppCompatActivity {
 
     //SUPPORTING FUNCTIONS
     /**********************************************************************************************/
-    private boolean checkPermission() {
+    private boolean checkCameraPermission() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {
             return false;
         }
         return true;
     }
-    private void requestPermission() {
+    private void requestAllPermission() {
         ActivityCompat.requestPermissions(this,new String[]{
                 Manifest.permission.CAMERA,
                 Manifest.permission.READ_EXTERNAL_STORAGE,
@@ -45,34 +45,37 @@ public class CameraActivity extends AppCompatActivity {
         }, PERMISSION_REQUEST_CODE);
     }
     public static Camera getCamera(Context context){
-        Camera c = null;
+        Camera camera = null;
         try {
-            c = Camera.open(); // attempt to get a Camera instance
+            camera = Camera.open(); // attempt to get a Camera instance
         }
         catch (Exception e){
             //TODO: Implement handler for camera being unavailable (Showing notification...)
-
         }
-        return c; // returns null if camera is unavailable
+        return camera; // returns null if camera is unavailable
     }
     /**********************************************************************************************/
 
-    //OVERIDE FUNCTION
+    //CALLBACKS
     /**********************************************************************************************/
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.camera_activity);
+    }
 
+    @Override
+    protected void onStart() {
+        super.onStart();
         //1. Request permission
-        if(!checkPermission()) {
-            requestPermission();
+        if(!checkCameraPermission()) {
+            requestAllPermission();
         }
         //2. Setting up camera
         mCamera = getCamera(this); //get camera
         //3.setting up preview
         mPreview = new CameraPreview(CameraActivity.this,mCamera);
-        FrameLayout preview = findViewById(R.id.camera_preview);
+        ConstraintLayout preview = findViewById(R.id.camera_preview);
         preview.addView(mPreview);
     }
     @Override
@@ -93,10 +96,15 @@ public class CameraActivity extends AppCompatActivity {
 }
 
 class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
-    private SurfaceHolder mHolder;
-    private Camera mCamera;
 
-    //constructor
+    //PARAMETERS
+    /**********************************************************************************************/
+    private SurfaceHolder mHolder; //holder for camera
+    private Camera mCamera;
+    /**********************************************************************************************/
+
+    //CONSTRUCTOR
+    /**********************************************************************************************/
     public CameraPreview(Context context, Camera camera) {
         super(context);
 
@@ -108,26 +116,28 @@ class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
         // deprecated setting, but required on Android versions prior to 3.0
         mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
     }
+    /**********************************************************************************************/
 
+    //CALLBACKS
+    /**********************************************************************************************/
+    @Override
     public void surfaceCreated(SurfaceHolder holder) {
+        //Rotation bug -> not completely fixed
+        mCamera.setDisplayOrientation(90);
         // The Surface has been created, now tell the camera where to draw the preview.
         try {
             mCamera.setPreviewDisplay(holder);
             mCamera.startPreview();
         } catch (IOException e) {
             Log.d(TAG, "Error setting camera preview: " + e.getMessage());
-            Toast.makeText(getContext(), "Error setting camera preview: ", Toast.LENGTH_SHORT).show();
         }
     }
 
-    public void surfaceDestroyed(SurfaceHolder holder) {
-        // empty. Take care of releasing the Camera preview in your activity.
-    }
-
+    @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int w, int h) {
-        // If your preview can change or rotate, take care of those events here.
-        // Make sure to stop the preview before resizing or reformatting it.
 
+
+        // Make sure to stop the preview before resizing or reformatting it.
         if (mHolder.getSurface() == null){
             // preview surface does not exist
             return;
@@ -148,4 +158,15 @@ class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
             Log.d(TAG, "Error starting camera preview: " + e.getMessage());
         }
     }
+
+    @Override
+    public void surfaceDestroyed(SurfaceHolder holder) {
+        Log.e("TABACT", "surfaceDestroyed()");
+        mCamera.stopPreview();
+        mCamera.setPreviewCallback(null);
+        mCamera.release();
+        mCamera = null;
+    }
+
+    /**********************************************************************************************/
 }
