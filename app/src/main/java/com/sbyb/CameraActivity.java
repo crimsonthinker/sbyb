@@ -78,6 +78,7 @@ public class CameraActivity extends AppCompatActivity {
         ConstraintLayout preview = findViewById(R.id.camera_preview);
         preview.addView(mPreview);
     }
+
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
