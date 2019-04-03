@@ -1,173 +1,115 @@
 package com.sbyb;
 
-import android.Manifest;
-import android.content.Context;
-import android.content.pm.PackageManager;
-import android.hardware.Camera;
-import android.support.constraint.ConstraintLayout;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AppCompatActivity;
+import java.util.List;
+
+import org.opencv.android.BaseLoaderCallback;
+import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame;
+import org.opencv.android.JavaCameraView;
+import org.opencv.android.LoaderCallbackInterface;
+import org.opencv.android.OpenCVLoader;
+import org.opencv.core.Core;
+import org.opencv.core.CvType;
+import org.opencv.core.Mat;
+import org.opencv.android.CameraBridgeViewBase;
+import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
+import org.opencv.imgproc.Imgproc;
+
+import android.app.Activity;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.SurfaceHolder;
+import android.view.Window;
+import android.view.WindowManager;
+import android.view.View.OnTouchListener;
 import android.view.SurfaceView;
-import android.view.View;
-import android.widget.Toast;
 
-import java.io.IOException;
-
-import static android.content.ContentValues.TAG;
-
-public class CameraActivity extends AppCompatActivity {
-
-    //PARAMETERS
-    /**********************************************************************************************/
-    private static final int PERMISSION_REQUEST_CODE = 200;
-    private Camera mCamera;
-    private CameraPreview mPreview;
-    /**********************************************************************************************/
-
-    //SUPPORTING FUNCTIONS
-    /**********************************************************************************************/
-    private boolean checkCameraPermission() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-                != PackageManager.PERMISSION_GRANTED) {
-            return false;
+public class CameraActivity extends Activity implements CvCameraViewListener2 {
+    private static final String  TAG              = "CameraActivity";
+    private Mat                  mRgba;
+    private Mat                  mRgbaF;
+    private Mat                  mRgbaT;
+    private CameraBridgeViewBase mOpenCvCameraView; //connection between camera and opencv library
+    private BaseLoaderCallback   mLoaderCallback = new BaseLoaderCallback(this) {
+        @Override
+        public void onManagerConnected(int status) {
+            switch (status) {
+                case LoaderCallbackInterface.SUCCESS:
+                {
+                    Log.i(TAG, "OpenCV loaded successfully");
+                    mOpenCvCameraView.enableView();
+                } break;
+                default:
+                {
+                    super.onManagerConnected(status);
+                } break;
+            }
         }
-        return true;
-    }
-    private void requestAllPermission() {
-        ActivityCompat.requestPermissions(this,new String[]{
-                Manifest.permission.CAMERA,
-                Manifest.permission.READ_EXTERNAL_STORAGE,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE
-        }, PERMISSION_REQUEST_CODE);
-    }
-    public static Camera getCamera(Context context){
-        Camera camera = null;
-        try {
-            camera = Camera.open(); // attempt to get a Camera instance
-        }
-        catch (Exception e){
-            //TODO: Implement handler for camera being unavailable (Showing notification...)
-        }
-        return camera; // returns null if camera is unavailable
-    }
-    /**********************************************************************************************/
+    };
 
-    //CALLBACKS
-    /**********************************************************************************************/
+    public CameraActivity() {
+        Log.i(TAG, "Instantiated new " + this.getClass());
+    }
+
+    /** Called when the activity is first created. */
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
+        Log.i(TAG, "called onCreate");
         super.onCreate(savedInstanceState);
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
         setContentView(R.layout.camera_activity);
+
+        mOpenCvCameraView = (JavaCameraView) findViewById(R.id.camera_surface_view);
+        mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
+        mOpenCvCameraView.setCvCameraViewListener(this);
     }
 
     @Override
-    protected void onStart() {
-        super.onStart();
-        //1. Request permission
-        if(!checkCameraPermission()) {
-            requestAllPermission();
-        }
-        //2. Setting up camera
-        mCamera = getCamera(this); //get camera
-        //3.setting up preview
-        mPreview = new CameraPreview(CameraActivity.this,mCamera);
-        ConstraintLayout preview = findViewById(R.id.camera_preview);
-        preview.addView(mPreview);
+    public void onPause() {
+        super.onPause();
+        if (mOpenCvCameraView != null)
+            mOpenCvCameraView.disableView();
     }
 
     @Override
-    public void onWindowFocusChanged(boolean hasFocus) {
-        super.onWindowFocusChanged(hasFocus);
-        if (hasFocus) {
-            View decorView = getWindow().getDecorView();
-            decorView.setSystemUiVisibility(
-                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                            | View.SYSTEM_UI_FLAG_FULLSCREEN
-                            | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
-        }
-    }
-    /**********************************************************************************************/
-}
-
-class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
-
-    //PARAMETERS
-    /**********************************************************************************************/
-    private SurfaceHolder mHolder; //holder for camera
-    private Camera mCamera;
-    /**********************************************************************************************/
-
-    //CONSTRUCTOR
-    /**********************************************************************************************/
-    public CameraPreview(Context context, Camera camera) {
-        super(context);
-
-        mCamera = camera;
-        // Install a SurfaceHolder.Callback so we get notified when the
-        // underlying surface is created and destroyed.
-        mHolder = getHolder();
-        mHolder.addCallback(this);
-        // deprecated setting, but required on Android versions prior to 3.0
-        mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-    }
-    /**********************************************************************************************/
-
-    //CALLBACKS
-    /**********************************************************************************************/
-    @Override
-    public void surfaceCreated(SurfaceHolder holder) {
-        //Rotation bug -> not completely fixed
-        mCamera.setDisplayOrientation(90);
-        // The Surface has been created, now tell the camera where to draw the preview.
-        try {
-            mCamera.setPreviewDisplay(holder);
-            mCamera.startPreview();
-        } catch (IOException e) {
-            Log.d(TAG, "Error setting camera preview: " + e.getMessage());
+    public void onResume() {
+        super.onResume();
+        if (!OpenCVLoader.initDebug()) {
+            Log.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization");
+            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_0_0, this, mLoaderCallback);
+        } else {
+            Log.d(TAG, "OpenCV library found inside package. Using it!");
+            mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
         }
     }
 
     @Override
-    public void surfaceChanged(SurfaceHolder holder, int format, int w, int h) {
-
-
-        // Make sure to stop the preview before resizing or reformatting it.
-        if (mHolder.getSurface() == null){
-            // preview surface does not exist
-            return;
-        }
-        // stop preview before making changes
-        try {
-            mCamera.stopPreview();
-        } catch (Exception e){
-            // ignore: tried to stop a non-existent preview
-        }
-        // set preview size and make any resize, rotate or
-        // reformatting changes here
-        // start preview with new settings
-        try {
-            mCamera.setPreviewDisplay(mHolder);
-            mCamera.startPreview();
-        } catch (Exception e){
-            Log.d(TAG, "Error starting camera preview: " + e.getMessage());
-        }
+    public void onDestroy() {
+        super.onDestroy();
+        if (mOpenCvCameraView != null)
+            mOpenCvCameraView.disableView();
     }
 
     @Override
-    public void surfaceDestroyed(SurfaceHolder holder) {
-        Log.e("TABACT", "surfaceDestroyed()");
-        mCamera.stopPreview();
-        mCamera.setPreviewCallback(null);
-        mCamera.release();
-        mCamera = null;
+    public void onCameraViewStarted(int width, int height) {
+        mRgba = new Mat(height, width, CvType.CV_8UC4);
+        mRgbaF = new Mat(height, width, CvType.CV_8UC4);
+        mRgbaT = new Mat(height, width, CvType.CV_8UC4);
     }
 
-    /**********************************************************************************************/
+    @Override
+    public void onCameraViewStopped() {
+        mRgba.release(); //destroy iamge data
+    }
+
+    @Override
+    public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
+        // TODO Auto-generated method stub
+        mRgba = inputFrame.rgba();
+        //Rotate mRgba 90 degrees
+        Core.transpose(mRgba, mRgbaT);
+        Core.flip(mRgbaT, mRgbaF, 1 );
+        Imgproc.resize(mRgbaF, mRgba, mRgbaF.size(), 0,0, 0);
+        return mRgba; // This function must return
+    }
 }

@@ -7,10 +7,10 @@
     android:layout_height="match_parent"
     tools:context=".CameraActivity">
 
-    <android.support.constraint.ConstraintLayout
-        android:id="@+id/camera_preview"
+    <org.opencv.android.JavaCameraView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="match_parent"
+        android:id="@+id/camera_surface_view" />
 
     <ImageButton
         android:id="@+id/photo_button"
