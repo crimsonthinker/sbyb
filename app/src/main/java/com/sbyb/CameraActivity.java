@@ -108,8 +108,8 @@ public class CameraActivity extends Activity implements CvCameraViewListener2 {
         mRgba = inputFrame.rgba();
         //Rotate mRgba 90 degrees
         Core.transpose(mRgba, mRgbaT);
-        Core.flip(mRgbaT, mRgbaF, 1 );
-        Imgproc.resize(mRgbaF, mRgba, mRgbaF.size(), 0,0, 0);
+        Imgproc.resize(mRgbaT, mRgbaF, mRgbaF.size(), 0,0, 0);
+        Core.flip(mRgbaF, mRgba, 1 );
         return mRgba; // This function must return
     }
 }
