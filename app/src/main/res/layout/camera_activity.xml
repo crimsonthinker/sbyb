@@ -18,7 +18,7 @@
         app:layout_constraintRight_toRightOf="parent"/>
 
     <ImageButton
-        android:id="@+id/photo_button"
+        android:id="@+id/camera_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -29,19 +29,6 @@
         android:background="@null"
         android:scaleX="1.5"
         android:scaleY="1.5"/>
-
-    <ImageButton
-        android:id="@+id/record_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        android:paddingBottom="10dp"
-        android:src="@mipmap/record_button"
-        android:background="@null"
-        android:scaleX="1.5"
-        android:scaleY="1.5" />
 
     <ImageButton
         android:id="@+id/camera_switcher"
