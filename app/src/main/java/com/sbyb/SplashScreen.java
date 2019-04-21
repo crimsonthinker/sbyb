@@ -1,5 +1,6 @@
 package com.sbyb;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
@@ -8,6 +9,7 @@ import android.view.View;
 
 public class SplashScreen extends AppCompatActivity {
     private final int SPLASH_DISPLAY_LENGTH = 2000; //2 seconds
+    private final int CAMERA_CODE = 1000;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         //SHOW SPLASH SCREEN
@@ -19,7 +21,7 @@ public class SplashScreen extends AppCompatActivity {
         Runnable cameraActivity = new Runnable() {
             public void run() {
                 Intent cameraIntent = new Intent(SplashScreen.this, CameraActivity.class);
-                startActivity(cameraIntent);
+                startActivityForResult(cameraIntent,CAMERA_CODE);
             };
         };
         waitHandler.postDelayed(cameraActivity,SPLASH_DISPLAY_LENGTH);
@@ -38,6 +40,18 @@ public class SplashScreen extends AppCompatActivity {
                             | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                             | View.SYSTEM_UI_FLAG_FULLSCREEN
                             | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+        }
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data){
+        if (requestCode == CAMERA_CODE){
+            if (resultCode == AppCompatActivity.RESULT_CANCELED){
+                finish();
+            }
+            if (resultCode == AppCompatActivity.RESULT_OK){
+
+            }
         }
     }
 }
