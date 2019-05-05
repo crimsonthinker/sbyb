@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.Date;
 
 import android.Manifest;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -24,6 +25,7 @@ import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Environment;
+import android.provider.MediaStore;
 import android.support.constraint.ConstraintLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -70,6 +72,7 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
     private static final boolean START_RECORDING = true;
     private static final boolean STOP_RECORDING = false;
     private static final String  MEDIA_TAG = "MediaRecording";
+    private static final String VIDEO_DIR = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES) + File.separator + APP_NAME + File.separator;
     private static final String GALLERY_DIR = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES) + File.separator + APP_NAME + File.separator;
     private static PreviewCallback previewFaceDetection;
     private static final int MIN_FACE_SCALE = 15;
@@ -86,6 +89,8 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
     private int mAudioEncoder = MediaRecorder.AudioEncoder.HE_AAC; //other: DEFAULT AAC AAC_ELD AMR_NB AMR_WB VORBIS(optional)
     private int mVideoEncoder = MediaRecorder.VideoEncoder.MPEG_4_SP; //other: H263 H264 HEVC VP8
     private boolean recordMode = STOP_RECORDING;
+    private String currentVideoFileName = "";
+    private String currentVideoFilePath = "";
     private CascadeClassifier faceDetector;
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) { //opencv-callback
         @Override
@@ -191,22 +196,17 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
                 camId = Camera.CameraInfo.CAMERA_FACING_FRONT;
             else
                 camId = Camera.CameraInfo.CAMERA_FACING_BACK;
-            if(camMode == RECORD_MODE)
-                mCamera.lock();
+            releaseMediaRecorder();
             releaseCamera();
             cameraSetUp();
-            if (camMode == RECORD_MODE) {
-                releaseMediaRecorder();
-                recordSetUp();
-            }
     }
     private void switchMode(boolean val) {
         cameraButton.startAnimation(fadeOut);
+        releaseMediaRecorder();
         if (val == PHOTO_MODE){
             cameraButton.setImageResource(R.mipmap.photo_button);
         }else {
             cameraButton.setImageResource(R.mipmap.record_button);
-            recordSetUp();
         }
         cameraButton.startAnimation(fadeIn);
         camMode = val;
@@ -237,11 +237,12 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
     }
     private void cameraSetUp(){
         mCamera = getCamera(); //get camera
-        if (previewFaceDetection != null && mCamera != null){
+        if (mCamera != null){
             mCamera.setPreviewCallback(previewFaceDetection);
         }else{
             Toast.makeText(getApplicationContext(),"Camera is null",Toast.LENGTH_SHORT).show();
-            //TODO: Add exception
+            mCamera.release();
+            mCamera = null;
         }
         mPreview = new CameraPreview(CameraActivity.this,mCamera);
         ConstraintLayout preview = findViewById(R.id.camera_preview);
@@ -261,17 +262,24 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
         mMediaRecorder.setAudioSource(mAudioSource);
         mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA); //default
         mMediaRecorder.setProfile(CamcorderProfile.get(CamcorderProfile.QUALITY_HIGH));
-        mMediaRecorder.setOutputFile(GALLERY_DIR + getOutputFileName(RECORD_MODE));//set at preparatio
+        currentVideoFileName = getOutputFileName(RECORD_MODE);
+        currentVideoFilePath = GALLERY_DIR + currentVideoFileName;
+        mMediaRecorder.setOutputFile(currentVideoFilePath);//set at preparatio
+        mMediaRecorder.setOrientationHint(270);
         try {
             mMediaRecorder.prepare();
         } catch (Exception e) {
             releaseMediaRecorder();
             Toast.makeText(getApplicationContext(),"Media recorder not started",Toast.LENGTH_SHORT).show();
         }
+        Toast.makeText(getApplicationContext(),"OK",Toast.LENGTH_SHORT).show();
+
     }
     private void releaseCamera(){
         if (mCamera != null){
-            mCamera.release();        // release the camera for other applications
+            mCamera.stopPreview();
+            mCamera.setPreviewCallback(null);
+            mCamera.release();
             mCamera = null;
         }
     }
@@ -283,6 +291,23 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
             if (mCamera != null)
                 mCamera.lock();           // lock camera for later use
         }
+    }
+
+    private void saveVideo() {
+        ContentValues values = new ContentValues(3);
+        File videoFile = new File(currentVideoFilePath);
+        if(videoFile.exists()){
+            Toast.makeText(getApplicationContext(),"Exist",Toast.LENGTH_SHORT).show();
+        }else{
+
+        }
+        values.put(MediaStore.Video.Media.TITLE,currentVideoFileName);
+        values.put(MediaStore.Video.Media.MIME_TYPE,"video/3gp");
+        values.put(MediaStore.Video.Media.DATA,videoFile.getAbsolutePath());
+        Uri savedVideo = getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI,values);
+        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+        mediaScanIntent.setData(savedVideo);
+        this.sendBroadcast(mediaScanIntent);
     }
     /**********************************************************************************************/
 
@@ -347,6 +372,12 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
     }
 
     @Override
+    protected void onRestart() {
+        super.onRestart();
+        cameraSetUp();
+    }
+
+    @Override
     public void onResume() {
         super.onResume();
         if (!OpenCVLoader.initDebug()) {
@@ -361,7 +392,6 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
     @Override
     public void onPause(){
         super.onPause();
-        //save.
     }
 
     @Override
@@ -394,13 +424,14 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
                 }else{
                     if(recordMode == STOP_RECORDING) {
                         Toast.makeText(getApplicationContext(), "Record mode", Toast.LENGTH_SHORT).show();
+                        recordSetUp();
                         mMediaRecorder.start();
                         recordMode = START_RECORDING;
                         //TODO: start animation thread here
                     }else{
                         Toast.makeText(getApplicationContext(), "Stop recording", Toast.LENGTH_SHORT).show();
                         mMediaRecorder.stop();
-                        recordSetUp();
+                        saveVideo();
                         recordMode = STOP_RECORDING;
                     }
                 }
@@ -469,6 +500,7 @@ class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
     private SurfaceHolder mHolder; //holder for camera
     private Camera mCamera;
     private int cameraOrientation;
+    private int cameraDegree;
     /**********************************************************************************************/
 
     //CONSTRUCTOR
@@ -491,6 +523,9 @@ class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
     public int getCameraOrientation(){
         return cameraOrientation;
     }
+    public int getCameraDegree() {
+        return cameraDegree;
+    }
     //CALLBACKS
     /**********************************************************************************************/
     @Override
@@ -498,6 +533,7 @@ class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
         //Rotation bug -> not completely fixed
         // The Surface has been created, now tell the camera where to draw the preview.
         try {
+            cameraDegree = 90;
             mCamera.setDisplayOrientation(90);
             mCamera.setPreviewDisplay(holder);
             mCamera.startPreview();
@@ -526,16 +562,16 @@ class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
         int orientation = mDisplay.getRotation();
         int degree = 0;
         switch (orientation) {
-            case Surface.ROTATION_0: degree = 90;
+            case Surface.ROTATION_0: degree = 90; cameraDegree = 90;
                 cameraOrientation = Surface.ROTATION_90;
                 break;
-            case Surface.ROTATION_90: degree = 0;
+            case Surface.ROTATION_90: degree = 0; cameraDegree = 0;
                 cameraOrientation = Surface.ROTATION_0;
                 break;
-            case Surface.ROTATION_180: degree = 270;
+            case Surface.ROTATION_180: degree = 270; cameraDegree = 270;
                 cameraOrientation = Surface.ROTATION_270;
                 break;
-            case Surface.ROTATION_270: degree = 180;
+            case Surface.ROTATION_270: degree = 180; cameraDegree = 180;
                 cameraOrientation = Surface.ROTATION_180;
                 break;
         }
