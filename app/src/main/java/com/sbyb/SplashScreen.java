@@ -10,6 +10,27 @@ import android.view.View;
 public class SplashScreen extends AppCompatActivity {
     private final int SPLASH_DISPLAY_LENGTH = 2000; //2 seconds
     private final int CAMERA_CODE = 1000;
+    private final int EDITOR_CODE = 2000;
+
+    // Open up camera when the app started
+//    @Override
+//    protected void onCreate(Bundle savedInstanceState) {
+//        //SHOW SPLASH SCREEN
+//        super.onCreate(savedInstanceState);
+//        setContentView(R.layout.splash_screen);
+//
+//        //WAIT THEN MOVE ON TO NEW ACTIVITY
+//        Handler waitHandler=  new Handler();
+//        Runnable cameraActivity = new Runnable() {
+//            public void run() {
+//                Intent cameraIntent = new Intent(SplashScreen.this, CameraActivity.class);
+//                startActivityForResult(cameraIntent,CAMERA_CODE);
+//            };
+//        };
+//        waitHandler.postDelayed(cameraActivity,SPLASH_DISPLAY_LENGTH);
+//    }
+
+    // Open up photo editor when the app started
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         //SHOW SPLASH SCREEN
@@ -20,8 +41,8 @@ public class SplashScreen extends AppCompatActivity {
         Handler waitHandler=  new Handler();
         Runnable cameraActivity = new Runnable() {
             public void run() {
-                Intent cameraIntent = new Intent(SplashScreen.this, CameraActivity.class);
-                startActivityForResult(cameraIntent,CAMERA_CODE);
+                Intent editorIntent = new Intent(SplashScreen.this, PhotoEditorActivity.class);
+                startActivityForResult(editorIntent,EDITOR_CODE);
             };
         };
         waitHandler.postDelayed(cameraActivity,SPLASH_DISPLAY_LENGTH);

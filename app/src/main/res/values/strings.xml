@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">SBYB</string>
+    <string name="title_activity_photo_editor">Photo editor</string>
+    <string name="edit_effects">Effects</string>
 </resources>
