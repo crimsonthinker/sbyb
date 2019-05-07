@@ -41,6 +41,18 @@
         android:src="@mipmap/camera_switcher"
         android:background="@null"/>
 
+    <ImageButton
+        android:id="@+id/gallery_preview"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        android:paddingRight="10dp"
+        android:paddingBottom="10dp"
+        android:src="@mipmap/gallery_button"
+        android:background="@null"/>
+
+
     <android.support.v7.widget.SwitchCompat
         android:id="@+id/mode_switcher"
         android:theme="@style/CameraSwitchMode"

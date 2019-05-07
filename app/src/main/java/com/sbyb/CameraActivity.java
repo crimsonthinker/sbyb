@@ -219,18 +219,8 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
         else
             return timeStamp + ".3gp";
     }
-    private static Bitmap rotateBitmap(Bitmap source, int cameraOrientation) {
-        float angle = 270;
-        switch(cameraOrientation){
-            case Surface.ROTATION_0:
-                angle = 0; break;
-            case Surface.ROTATION_90:
-                angle = 270; break;
-            case Surface.ROTATION_180:
-                angle = 180; break;
-            case Surface.ROTATION_270:
-                angle = 90; break;
-        }
+    private Bitmap rotateBitmap(Bitmap source) {
+        float angle = getPhotoOrientation();
         Matrix matrix = new Matrix();
         matrix.postRotate(angle);
         return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
@@ -265,7 +255,7 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
         currentVideoFileName = getOutputFileName(RECORD_MODE);
         currentVideoFilePath = GALLERY_DIR + currentVideoFileName;
         mMediaRecorder.setOutputFile(currentVideoFilePath);//set at preparatio
-        mMediaRecorder.setOrientationHint(270);
+        mMediaRecorder.setOrientationHint(getRecordOrientation());
         try {
             mMediaRecorder.prepare();
         } catch (Exception e) {
@@ -308,6 +298,43 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
         Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
         mediaScanIntent.setData(savedVideo);
         this.sendBroadcast(mediaScanIntent);
+    }
+
+    int getRecordOrientation() {
+        int camDegree = mPreview.getCameraDegree();
+        if(camDegree == 90){
+            if(camId == Camera.CameraInfo.CAMERA_FACING_FRONT)
+                return 270;
+            else
+                return 90; //no need to flip
+        }
+        if(camDegree == 0)
+            return 0;
+        if(camDegree == 180)
+            return 180;
+        return 0;
+    }
+    float getPhotoOrientation() {
+        int camDegree = mPreview.getCameraDegree();
+        if(camDegree == 90) {
+            if(camId == Camera.CameraInfo.CAMERA_FACING_FRONT)
+                return 270.0f; //ok
+            else
+                return 90.0f; //ok
+        }
+        if(camDegree == 180) {
+            if (camId == Camera.CameraInfo.CAMERA_FACING_FRONT)
+                return 180.0f; //ok
+            else
+                return 180.0f; //ok
+        }
+        if(camDegree == 0) {
+            if (camId == Camera.CameraInfo.CAMERA_FACING_FRONT)
+                return 0f; //ok
+            else
+                return 0f; //ok
+        }
+        return 0f;
     }
     /**********************************************************************************************/
 
@@ -418,7 +445,7 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
                 break;
             case R.id.camera_button:
                 if(camMode == PHOTO_MODE) {
-                    Toast.makeText(getApplicationContext() , "Photo mode", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getApplicationContext() , String.valueOf(mPreview.getCameraDegree()), Toast.LENGTH_SHORT).show();
                     mCamera.takePicture(null, null, this);
                     //Begin blinking thread
                 }else{
@@ -426,6 +453,7 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
                         Toast.makeText(getApplicationContext(), "Record mode", Toast.LENGTH_SHORT).show();
                         recordSetUp();
                         mMediaRecorder.start();
+                        Toast.makeText(getApplicationContext(),String.valueOf(mPreview.getCameraDegree()),Toast.LENGTH_SHORT).show();
                         recordMode = START_RECORDING;
                         //TODO: start animation thread here
                     }else{
@@ -460,7 +488,7 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
                 fileDir.mkdirs();
             //Save to SBYB folder
             Bitmap mBitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
-            Bitmap mRotatedBitmap = rotateBitmap(mBitmap,mPreview.getCameraOrientation());
+            Bitmap mRotatedBitmap = rotateBitmap(mBitmap);
             String fileName = getOutputFileName(PHOTO_MODE);
             String destinationPath = GALLERY_DIR + fileName;
             FileOutputStream mOutput;
