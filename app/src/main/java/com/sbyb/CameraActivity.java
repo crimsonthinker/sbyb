@@ -5,8 +5,10 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 
 import android.Manifest;
 import android.content.ContentValues;
@@ -36,6 +38,8 @@ import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.util.Pair;
 import android.view.Display;
+import android.view.Menu;
+import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -71,12 +75,13 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
     private static final int PERMISSION_REQUEST_CODE = 200;
     private static final boolean START_RECORDING = true;
     private static final boolean STOP_RECORDING = false;
-    private static final String  MEDIA_TAG = "MediaRecording";
+    private static final String MEDIA_TAG = "MediaRecording";
     private static final String VIDEO_DIR = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES) + File.separator + APP_NAME + File.separator;
     private static final String GALLERY_DIR = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES) + File.separator + APP_NAME + File.separator;
     private static PreviewCallback previewFaceDetection;
     private static final int MIN_FACE_SCALE = 15;
     private static final int MAX_FACE_SCALE = 2;
+    private static boolean CHECK_FLASH = true;
     //Other attributes
     private int cWidth; //size of someth3ing?
     private int cHeight;
@@ -97,7 +102,7 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
         public void onManagerConnected(int status) {
             switch (status) {
                 case LoaderCallbackInterface.SUCCESS: {
-                    try{
+                    try {
                         InputStream is = getResources().openRawResource(R.raw.haarcascade_frontal_face);
                         File cascadeDir = getDir("cascade", Context.MODE_APPEND);
                         File mCascadeFile = new File(cascadeDir, "lbpcascade_frontalface.xml");
@@ -126,6 +131,7 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
     }; //opencv callback
     private ImageButton cameraButton; //image buttons
     private ImageButton cameraSwitcher;
+    private ImageButton cameraFlash;
     private SwitchCompat modeSwitcher;
     private Animation blink; //animations
     private Animation fadeIn;
@@ -133,6 +139,7 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
     /**********************************************************************************************/
 
     //SUPPORTING FUNCTIONS
+
     /**********************************************************************************************/
     private boolean checkPermissions() {
         return (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED &&
@@ -142,8 +149,9 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
                 ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED &&
                 ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED);
     }
+
     private void requestAllPermission() {
-        ActivityCompat.requestPermissions(CameraActivity.this,new String[]{
+        ActivityCompat.requestPermissions(CameraActivity.this, new String[]{
                 Manifest.permission.CAMERA,
                 Manifest.permission.RECORD_AUDIO,
                 Manifest.permission.VIBRATE,
@@ -152,12 +160,12 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
                 Manifest.permission.ACCESS_FINE_LOCATION
         }, PERMISSION_REQUEST_CODE);
     }
-    private Camera getCamera(){
+
+    private Camera getCamera() {
         Camera camera = null;
         try {
             camera = Camera.open(camId); // attempt to get a Camera instance
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             AlertDialog.Builder noCameraBuilder = new AlertDialog.Builder(this);
             noCameraBuilder.setTitle(R.string.app_name);
             noCameraBuilder.setIcon(R.mipmap.lotus);
@@ -171,46 +179,51 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
             AlertDialog noCameraDialog = noCameraBuilder.create();
             noCameraDialog.show();
         }
-        if(mCamera == null){
+        if (mCamera == null) {
 
         }
         return camera; // returns null if camera is unavailable
     }
-    private MediaRecorder getMediaRecorder(){
+
+    private MediaRecorder getMediaRecorder() {
         MediaRecorder recorder = null;
-        try{
+        try {
             recorder = new MediaRecorder();
-        }catch(Exception e){
+        } catch (Exception e) {
             //TODO: Do something
         }
         return recorder;
     }
-    private Pair<Integer,Integer> getScreenSize() {
+
+    private Pair<Integer, Integer> getScreenSize() {
         Display display = this.getWindowManager().getDefaultDisplay();
         Point size = new Point();
         display.getRealSize(size);
         return new Pair<>(size.x, size.y);
     }
+
     private void switchCamera() {
-            if (camId == Camera.CameraInfo.CAMERA_FACING_BACK)
-                camId = Camera.CameraInfo.CAMERA_FACING_FRONT;
-            else
-                camId = Camera.CameraInfo.CAMERA_FACING_BACK;
-            releaseMediaRecorder();
-            releaseCamera();
-            cameraSetUp();
+        if (camId == Camera.CameraInfo.CAMERA_FACING_BACK)
+            camId = Camera.CameraInfo.CAMERA_FACING_FRONT;
+        else
+            camId = Camera.CameraInfo.CAMERA_FACING_BACK;
+        releaseMediaRecorder();
+        releaseCamera();
+        cameraSetUp();
     }
+
     private void switchMode(boolean val) {
         cameraButton.startAnimation(fadeOut);
         releaseMediaRecorder();
-        if (val == PHOTO_MODE){
+        if (val == PHOTO_MODE) {
             cameraButton.setImageResource(R.mipmap.photo_button);
-        }else {
+        } else {
             cameraButton.setImageResource(R.mipmap.record_button);
         }
         cameraButton.startAnimation(fadeIn);
         camMode = val;
     }
+
     private static String getOutputFileName(boolean mode) {
         // Create a media file name
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
@@ -219,40 +232,47 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
         else
             return timeStamp + ".3gp";
     }
+
     private static Bitmap rotateBitmap(Bitmap source, int cameraOrientation) {
         float angle = 270;
-        switch(cameraOrientation){
+        switch (cameraOrientation) {
             case Surface.ROTATION_0:
-                angle = 0; break;
+                angle = 0;
+                break;
             case Surface.ROTATION_90:
-                angle = 270; break;
+                angle = 270;
+                break;
             case Surface.ROTATION_180:
-                angle = 180; break;
+                angle = 180;
+                break;
             case Surface.ROTATION_270:
-                angle = 90; break;
+                angle = 90;
+                break;
         }
         Matrix matrix = new Matrix();
         matrix.postRotate(angle);
         return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
     }
-    private void cameraSetUp(){
+
+    private void cameraSetUp() {
         mCamera = getCamera(); //get camera
-        if (mCamera != null){
+        if (mCamera != null) {
             mCamera.setPreviewCallback(previewFaceDetection);
-        }else{
-            Toast.makeText(getApplicationContext(),"Camera is null",Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(getApplicationContext(), "Camera is null", Toast.LENGTH_SHORT).show();
             mCamera.release();
             mCamera = null;
         }
-        mPreview = new CameraPreview(CameraActivity.this,mCamera);
+        mPreview = new CameraPreview(CameraActivity.this, mCamera);
         ConstraintLayout preview = findViewById(R.id.camera_preview);
         preview.addView(mPreview);
     }
+
     private void recordSetUp() {
         try {
             mCamera.setPreviewDisplay(mPreview.getHolder());
-        }catch(Exception e){
-            Toast.makeText(getApplicationContext(),"Camera preview not set",Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Toast.makeText(getApplicationContext(), "Camera preview not set", Toast.LENGTH_SHORT).show();
         }
         mCamera.startPreview();
         mCamera.unlock();
@@ -270,19 +290,21 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
             mMediaRecorder.prepare();
         } catch (Exception e) {
             releaseMediaRecorder();
-            Toast.makeText(getApplicationContext(),"Media recorder not started",Toast.LENGTH_SHORT).show();
+            Toast.makeText(getApplicationContext(), "Media recorder not started", Toast.LENGTH_SHORT).show();
         }
-        Toast.makeText(getApplicationContext(),"OK",Toast.LENGTH_SHORT).show();
+        Toast.makeText(getApplicationContext(), "OK", Toast.LENGTH_SHORT).show();
 
     }
-    private void releaseCamera(){
-        if (mCamera != null){
+
+    private void releaseCamera() {
+        if (mCamera != null) {
             mCamera.stopPreview();
             mCamera.setPreviewCallback(null);
             mCamera.release();
             mCamera = null;
         }
     }
+
     private void releaseMediaRecorder() {
         if (mMediaRecorder != null) {
             mMediaRecorder.reset();   // clear recorder configuration
@@ -296,15 +318,15 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
     private void saveVideo() {
         ContentValues values = new ContentValues(3);
         File videoFile = new File(currentVideoFilePath);
-        if(videoFile.exists()){
-            Toast.makeText(getApplicationContext(),"Exist",Toast.LENGTH_SHORT).show();
-        }else{
+        if (videoFile.exists()) {
+            Toast.makeText(getApplicationContext(), "Exist", Toast.LENGTH_SHORT).show();
+        } else {
 
         }
-        values.put(MediaStore.Video.Media.TITLE,currentVideoFileName);
-        values.put(MediaStore.Video.Media.MIME_TYPE,"video/3gp");
-        values.put(MediaStore.Video.Media.DATA,videoFile.getAbsolutePath());
-        Uri savedVideo = getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI,values);
+        values.put(MediaStore.Video.Media.TITLE, currentVideoFileName);
+        values.put(MediaStore.Video.Media.MIME_TYPE, "video/3gp");
+        values.put(MediaStore.Video.Media.DATA, videoFile.getAbsolutePath());
+        Uri savedVideo = getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values);
         Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
         mediaScanIntent.setData(savedVideo);
         this.sendBroadcast(mediaScanIntent);
@@ -312,28 +334,34 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
     /**********************************************************************************************/
 
     //CALLBACKS
+
     /**********************************************************************************************/
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.camera_activity);
         //1. Request permission, double check
-        if(!checkPermissions()) {
+        if (!checkPermissions()) {
             requestAllPermission();
         }
 
         //2. Initialize button
-        cameraButton = findViewById(R.id.camera_button); cameraButton.setOnClickListener(this);
-        cameraSwitcher = findViewById(R.id.camera_switcher); cameraSwitcher.setOnClickListener(this);
-        modeSwitcher = findViewById(R.id.mode_switcher); modeSwitcher.setOnCheckedChangeListener(this);
+        cameraButton = findViewById(R.id.camera_button);
+        cameraButton.setOnClickListener(this);
+        cameraSwitcher = findViewById(R.id.camera_switcher);
+        cameraSwitcher.setOnClickListener(this);
+        cameraFlash = findViewById(R.id.camera_flash);
+        cameraFlash.setOnClickListener(this);
+        modeSwitcher = findViewById(R.id.mode_switcher);
+        modeSwitcher.setOnCheckedChangeListener(this);
         //3. Check whether there are 2 cameras
-        if (Camera.getNumberOfCameras() <= 1){
+        if (Camera.getNumberOfCameras() <= 1) {
             cameraSwitcher.setVisibility(View.GONE);
         }
         //4. Set animation
-        blink = AnimationUtils.loadAnimation(getApplicationContext(),R.anim.sbyb_blink);
-        fadeIn = AnimationUtils.loadAnimation(getApplicationContext(),R.anim.sbyb_fade_in);
-        fadeOut = AnimationUtils.loadAnimation(getApplicationContext(),R.anim.sbyb_fade_out);
+        blink = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.sbyb_blink);
+        fadeIn = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.sbyb_fade_in);
+        fadeOut = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.sbyb_fade_out);
         //5.
         previewFaceDetection = new PreviewCallback() {
             @Override
@@ -366,7 +394,7 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
     protected void onStart() {
         //1. Get screen size
         super.onStart();
-        Pair<Integer,Integer> size = this.getScreenSize();
+        Pair<Integer, Integer> size = this.getScreenSize();
         cWidth = size.first;
         cHeight = size.second;
     }
@@ -390,7 +418,7 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
     }
 
     @Override
-    public void onPause(){
+    public void onPause() {
         super.onPause();
     }
 
@@ -411,24 +439,29 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
 
     @Override
     public void onClick(View view) {
-        switch(view.getId()){
+        switch (view.getId()) {
             case R.id.camera_switcher:// switching camera
                 view.startAnimation(blink);
                 switchCamera();
                 break;
+
+            case R.id.camera_flash:// flash light
+                view.startAnimation(blink);
+                flashCamera();
+                break;
             case R.id.camera_button:
-                if(camMode == PHOTO_MODE) {
-                    Toast.makeText(getApplicationContext() , "Photo mode", Toast.LENGTH_SHORT).show();
+                if (camMode == PHOTO_MODE) {
+                    Toast.makeText(getApplicationContext(), "Photo mode", Toast.LENGTH_SHORT).show();
                     mCamera.takePicture(null, null, this);
                     //Begin blinking thread
-                }else{
-                    if(recordMode == STOP_RECORDING) {
+                } else {
+                    if (recordMode == STOP_RECORDING) {
                         Toast.makeText(getApplicationContext(), "Record mode", Toast.LENGTH_SHORT).show();
                         recordSetUp();
                         mMediaRecorder.start();
                         recordMode = START_RECORDING;
                         //TODO: start animation thread here
-                    }else{
+                    } else {
                         Toast.makeText(getApplicationContext(), "Stop recording", Toast.LENGTH_SHORT).show();
                         mMediaRecorder.stop();
                         saveVideo();
@@ -442,8 +475,8 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
     }
 
     @Override
-    public void onCheckedChanged(CompoundButton cButton, boolean val){
-        switch (cButton.getId()){
+    public void onCheckedChanged(CompoundButton cButton, boolean val) {
+        switch (cButton.getId()) {
             case R.id.mode_switcher:
                 switchMode(val);
             default:
@@ -452,22 +485,22 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
     }
 
     @Override
-    public void onPictureTaken( byte[] data, Camera camera){
+    public void onPictureTaken(byte[] data, Camera camera) {
         if (data != null) {
             //Check directory existence
             File fileDir = new File(GALLERY_DIR);
-            if(!fileDir.exists())
+            if (!fileDir.exists())
                 fileDir.mkdirs();
             //Save to SBYB folder
             Bitmap mBitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
-            Bitmap mRotatedBitmap = rotateBitmap(mBitmap,mPreview.getCameraOrientation());
+            Bitmap mRotatedBitmap = rotateBitmap(mBitmap, mPreview.getCameraOrientation());
             String fileName = getOutputFileName(PHOTO_MODE);
             String destinationPath = GALLERY_DIR + fileName;
             FileOutputStream mOutput;
             try {
                 mOutput = new FileOutputStream(destinationPath);
                 mRotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 100, mOutput);
-            }catch (Exception e){
+            } catch (Exception e) {
 
             }
             Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
@@ -481,7 +514,7 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults){
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         if (requestCode == PERMISSION_REQUEST_CODE) {
             if (!Arrays.asList(grantResults).contains(PackageManager.PERMISSION_DENIED)) {
                 //2. Setting up camera
@@ -489,6 +522,48 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
             } else {
                 //TODO: Add warning dialog
                 Toast.makeText(getApplicationContext(), "permission is not fully granted", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    //*******************************************************************************************************
+    //flashlight
+    Camera.Parameters params ;
+    private void flashCamera() {
+        if (camId == Camera.CameraInfo.CAMERA_FACING_FRONT){
+            Toast.makeText(getBaseContext(), "Can not open flash when camera facing front",
+                    Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (CHECK_FLASH) {
+            try {
+                if (getPackageManager().hasSystemFeature(
+                        PackageManager.FEATURE_CAMERA_FLASH)) {
+                    params = mCamera.getParameters();
+                    params.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+                    mCamera.setParameters(params);
+                    mCamera.startPreview();
+                    CHECK_FLASH = false;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                Toast.makeText(getBaseContext(), "Exception flashLightOn()",
+                        Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            try {
+                if (getPackageManager().hasSystemFeature(
+                        PackageManager.FEATURE_CAMERA_FLASH)) {
+                    params = mCamera.getParameters();
+                    params.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
+                    mCamera.setParameters(params);
+                    mCamera.stopPreview();
+                    CHECK_FLASH = true;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                Toast.makeText(getBaseContext(), "Exception flashLightOff",
+                        Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -501,6 +576,7 @@ class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
     private Camera mCamera;
     private int cameraOrientation;
     private int cameraDegree;
+    public final int FOCUS_AREA_SIZE = 300;
     /**********************************************************************************************/
 
     //CONSTRUCTOR
@@ -516,7 +592,69 @@ class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
         mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
         cameraOrientation = Surface.ROTATION_90;
+
+
+        setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (mCamera != null) {
+                    Camera camera = mCamera;
+                    camera.cancelAutoFocus();
+                    android.graphics.Rect focusRect = new android.graphics.Rect(
+                            (int)(event.getX() - 1000),
+                            (int)(event.getY() - 1000),
+                            (int)(event.getX() + 1000),
+                            (int)(event.getY() + 1000));
+
+                    Camera.Parameters parameters = camera.getParameters();
+                    if (parameters.getFocusMode().equals(
+                            Camera.Parameters.FOCUS_MODE_AUTO) ){
+                        parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
+                    }
+
+                    if (parameters.getMaxNumFocusAreas() > 0) {
+                        List<Camera.Area> mylist = new ArrayList<Camera.Area>();
+                        mylist.add(new Camera.Area(focusRect, 1000));
+                        parameters.setFocusAreas(mylist);
+                    }
+
+                    try {
+                        camera.cancelAutoFocus();
+                        camera.setParameters(parameters);
+                        camera.startPreview();
+                        camera.autoFocus(new Camera.AutoFocusCallback() {
+                            @Override
+                            public void onAutoFocus(boolean success, Camera camera) {
+                                if (!camera.getParameters().getFocusMode().equals(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)) {
+                                    Camera.Parameters parameters = camera.getParameters();
+                                    parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
+                                    if (parameters.getMaxNumFocusAreas() > 0) {
+                                        parameters.setFocusAreas(null);
+                                    }
+                                    camera.setParameters(parameters);
+                                    camera.startPreview();
+                                }
+                            }
+                        });
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+                return true;
+            }
+        });
+
+        setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    focusOnTouch(event);
+                }
+                return true;
+            }
+        });
     }
+
     /**********************************************************************************************/
 
     //FUNCTION
@@ -592,5 +730,63 @@ class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
         mCamera.release();
         mCamera = null;
     }
+
+    //focus
+    //*******************************************************************************
+
+    private void focusOnTouch(MotionEvent event) {
+        if (mCamera != null ) {
+
+            Camera.Parameters parameters = mCamera.getParameters();
+            if (parameters.getMaxNumMeteringAreas() > 0){
+                Log.i(TAG,"fancy !");
+                android.graphics.Rect rect = calculateFocusArea(event.getX(), event.getY());
+
+                parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
+                List<Camera.Area> meteringAreas = new ArrayList<Camera.Area>();
+                meteringAreas.add(new Camera.Area(rect, 800));
+                parameters.setFocusAreas(meteringAreas);
+
+                mCamera.setParameters(parameters);
+                mCamera.autoFocus(mAutoFocusTakePictureCallback);
+            }else {
+                mCamera.autoFocus(mAutoFocusTakePictureCallback);
+            }
+        }
+    }
+
+    private android.graphics.Rect calculateFocusArea(float x, float y) {
+        int left = clamp(Float.valueOf((x / this.getWidth()) * 2000 - 1000).intValue(), FOCUS_AREA_SIZE);
+        int top = clamp(Float.valueOf((y / this.getHeight()) * 2000 - 1000).intValue(), FOCUS_AREA_SIZE);
+
+        return new android.graphics.Rect(left, top, left + FOCUS_AREA_SIZE, top + FOCUS_AREA_SIZE);
+    }
+
+    private int clamp(int touchCoordinateInCameraReper, int focusAreaSize) {
+        int result;
+        if (Math.abs(touchCoordinateInCameraReper)+focusAreaSize/2>1000){
+            if (touchCoordinateInCameraReper>0){
+                result = 1000 - focusAreaSize/2;
+            } else {
+                result = -1000 + focusAreaSize/2;
+            }
+        } else{
+            result = touchCoordinateInCameraReper - focusAreaSize/2;
+        }
+        return result;
+    }
+
+    private Camera.AutoFocusCallback mAutoFocusTakePictureCallback = new Camera.AutoFocusCallback() {
+        @Override
+        public void onAutoFocus(boolean success, Camera camera) {
+            if (success) {
+                // do something...
+                Log.i("tap_to_focus","success!");
+            } else {
+                // do something...
+                Log.i("tap_to_focus","fail!");
+            }
+        }
+    };
 }
 /**********************************************************************************************/

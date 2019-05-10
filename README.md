@@ -1,3 +1,3 @@
 # SBYB
 
-Selfie Because You are Fucking Beautiful
+Selfie Because You are Beautiful

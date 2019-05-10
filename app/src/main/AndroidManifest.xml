@@ -35,7 +35,7 @@
             </meta-data>
         </provider>
         <activity
-            android:name=".SplashScreen">
+            android:name=".CameraActivity">
             <intent-filter>
                 <action
                     android:name="android.intent.action.MAIN" />
@@ -45,7 +45,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".CameraActivity">
+            android:name=".SplashScreen">
 
         </activity>
     </application>
