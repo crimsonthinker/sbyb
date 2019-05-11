@@ -16,8 +16,4 @@
     </style>
 
     <!-- Camera switch style-->
-    <style name="CameraSwitchMode" >
-        <item name="thumbTint">@color/color_switch_mode</item>
-        <item name="trackTint">@color/color_switch_mode</item>
-    </style>
 </resources>

@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.sbyb" >
+    <uses-sdk
+        android:minSdkVersion="8"
+        android:targetSdkVersion="17" />
     <!--Allow optimization of camera-->
     <!--Permissions-->
     <uses-permission android:name="android.permission.CAMERA"/>
@@ -10,11 +13,7 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <!--features-->
-    <uses-feature android:name="android.hardware.camera" android:required="true"/>
-    <uses-feature android:name="android.hardware.camera.autofocus" android:required="true"/>
-    <uses-feature android:name="android.hardware.camera.front" android:required="true"/>
-    <uses-feature android:name="android.hardware.camera.front.autofocus" android:required="true"/>
-    <uses-feature android:name="android.hardware.location.gps" android:required="true" />
+    <uses-feature android:name="android.hardware.camera"/>
     <!--Applications-->
     <application
         android:allowBackup="true"

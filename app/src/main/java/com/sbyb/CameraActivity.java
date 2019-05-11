@@ -13,6 +13,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -25,6 +26,7 @@ import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Environment;
+import android.os.Handler;
 import android.provider.MediaStore;
 import android.support.constraint.ConstraintLayout;
 import android.support.v4.app.ActivityCompat;
@@ -47,6 +49,7 @@ import android.view.animation.AnimationUtils;
 import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.ImageButton;
+import android.widget.Switch;
 import android.widget.Toast;
 
 import org.opencv.android.BaseLoaderCallback;
@@ -65,6 +68,8 @@ import static android.content.Context.WINDOW_SERVICE;
 public class CameraActivity extends AppCompatActivity implements OnClickListener, OnCheckedChangeListener,PictureCallback {
 
     //FINAL STATIC VARIABLE
+    private static final boolean ON = true;
+    private static final boolean OFF = false;
     private static final String APP_NAME = "SBYB";
     private static final boolean PHOTO_MODE = false;
     private static final boolean RECORD_MODE = true;
@@ -92,6 +97,8 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
     private String currentVideoFileName = "";
     private String currentVideoFilePath = "";
     private CascadeClassifier faceDetector;
+    private boolean flashLightState = OFF;
+    private boolean isFlash = false;
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) { //opencv-callback
         @Override
         public void onManagerConnected(int status) {
@@ -126,7 +133,9 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
     }; //opencv callback
     private ImageButton cameraButton; //image buttons
     private ImageButton cameraSwitcher;
-    private SwitchCompat modeSwitcher;
+    private ImageButton galleryPreview;
+    private ImageButton flashLight;
+    private Switch modeSwitcher;
     private Animation blink; //animations
     private Animation fadeIn;
     private Animation fadeOut;
@@ -192,10 +201,18 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
         return new Pair<>(size.x, size.y);
     }
     private void switchCamera() {
-            if (camId == Camera.CameraInfo.CAMERA_FACING_BACK)
+            if (camId == Camera.CameraInfo.CAMERA_FACING_BACK) {
+                flashLight.setVisibility(View.INVISIBLE);
                 camId = Camera.CameraInfo.CAMERA_FACING_FRONT;
-            else
+            }
+            else {
+                flashLight.setVisibility(View.VISIBLE);
                 camId = Camera.CameraInfo.CAMERA_FACING_BACK;
+            }
+            if(flashLightState == ON) {
+                flashLightState = OFF;
+                flashLight.setImageResource(R.mipmap.flashlight_off);
+            }
             releaseMediaRecorder();
             releaseCamera();
             cameraSetUp();
@@ -205,8 +222,10 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
         releaseMediaRecorder();
         if (val == PHOTO_MODE){
             cameraButton.setImageResource(R.mipmap.photo_button);
+            modeSwitcher.setThumbResource(R.mipmap.photo_switch_mode);
         }else {
             cameraButton.setImageResource(R.mipmap.record_button);
+            modeSwitcher.setThumbResource(R.mipmap.record_switch_mode);
         }
         cameraButton.startAnimation(fadeIn);
         camMode = val;
@@ -219,18 +238,8 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
         else
             return timeStamp + ".3gp";
     }
-    private static Bitmap rotateBitmap(Bitmap source, int cameraOrientation) {
-        float angle = 270;
-        switch(cameraOrientation){
-            case Surface.ROTATION_0:
-                angle = 0; break;
-            case Surface.ROTATION_90:
-                angle = 270; break;
-            case Surface.ROTATION_180:
-                angle = 180; break;
-            case Surface.ROTATION_270:
-                angle = 90; break;
-        }
+    private Bitmap rotateBitmap(Bitmap source) {
+        float angle = getPhotoOrientation();
         Matrix matrix = new Matrix();
         matrix.postRotate(angle);
         return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, true);
@@ -264,8 +273,8 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
         mMediaRecorder.setProfile(CamcorderProfile.get(CamcorderProfile.QUALITY_HIGH));
         currentVideoFileName = getOutputFileName(RECORD_MODE);
         currentVideoFilePath = GALLERY_DIR + currentVideoFileName;
-        mMediaRecorder.setOutputFile(currentVideoFilePath);//set at preparatio
-        mMediaRecorder.setOrientationHint(270);
+        mMediaRecorder.setOutputFile(currentVideoFilePath);//set at preparation
+        mMediaRecorder.setOrientationHint(getRecordOrientation());
         try {
             mMediaRecorder.prepare();
         } catch (Exception e) {
@@ -309,6 +318,43 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
         mediaScanIntent.setData(savedVideo);
         this.sendBroadcast(mediaScanIntent);
     }
+
+    int getRecordOrientation() {
+        int camDegree = mPreview.getCameraDegree();
+        if(camDegree == 90){
+            if(camId == Camera.CameraInfo.CAMERA_FACING_FRONT)
+                return 270;
+            else
+                return 90; //no need to flip
+        }
+        if(camDegree == 0)
+            return 0;
+        if(camDegree == 180)
+            return 180;
+        return 0;
+    }
+    float getPhotoOrientation() {
+        int camDegree = mPreview.getCameraDegree();
+        if(camDegree == 90) {
+            if(camId == Camera.CameraInfo.CAMERA_FACING_FRONT)
+                return 270.0f; //ok
+            else
+                return 90.0f; //ok
+        }
+        if(camDegree == 180) {
+            if (camId == Camera.CameraInfo.CAMERA_FACING_FRONT)
+                return 180.0f; //ok
+            else
+                return 180.0f; //ok
+        }
+        if(camDegree == 0) {
+            if (camId == Camera.CameraInfo.CAMERA_FACING_FRONT)
+                return 0f; //ok
+            else
+                return 0f; //ok
+        }
+        return 0f;
+    }
     /**********************************************************************************************/
 
     //CALLBACKS
@@ -326,6 +372,8 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
         cameraButton = findViewById(R.id.camera_button); cameraButton.setOnClickListener(this);
         cameraSwitcher = findViewById(R.id.camera_switcher); cameraSwitcher.setOnClickListener(this);
         modeSwitcher = findViewById(R.id.mode_switcher); modeSwitcher.setOnCheckedChangeListener(this);
+        galleryPreview = findViewById(R.id.gallery_preview); galleryPreview.setOnClickListener(this);
+        flashLight = findViewById(R.id.flash_light); flashLight.setOnClickListener(this);
         //3. Check whether there are 2 cameras
         if (Camera.getNumberOfCameras() <= 1){
             cameraSwitcher.setVisibility(View.GONE);
@@ -360,6 +408,11 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
                 }
             }
         };
+        isFlash = getApplicationContext().getPackageManager()
+                .hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH);
+        if(!isFlash || camId == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+            flashLight.setVisibility(View.INVISIBLE);
+        }
     }
 
     @Override
@@ -418,24 +471,52 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
                 break;
             case R.id.camera_button:
                 if(camMode == PHOTO_MODE) {
-                    Toast.makeText(getApplicationContext() , "Photo mode", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getApplicationContext() , String.valueOf(mPreview.getCameraDegree()), Toast.LENGTH_SHORT).show();
+                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_NOSENSOR);
                     mCamera.takePicture(null, null, this);
+                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR);
                     //Begin blinking thread
                 }else{
                     if(recordMode == STOP_RECORDING) {
+                        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_NOSENSOR);
                         Toast.makeText(getApplicationContext(), "Record mode", Toast.LENGTH_SHORT).show();
                         recordSetUp();
                         mMediaRecorder.start();
+                        Toast.makeText(getApplicationContext(),String.valueOf(mPreview.getCameraDegree()),Toast.LENGTH_SHORT).show();
                         recordMode = START_RECORDING;
                         //TODO: start animation thread here
                     }else{
                         Toast.makeText(getApplicationContext(), "Stop recording", Toast.LENGTH_SHORT).show();
-                        mMediaRecorder.stop();
-                        saveVideo();
+                        Boolean isSavable = true;
+                        try {
+                            mMediaRecorder.stop();
+                        }catch(Exception e){
+                            isSavable = false;
+                        }
+                        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR);
+                        if(isSavable)
+                            saveVideo();
                         recordMode = STOP_RECORDING;
                     }
                 }
                 break;
+            case R.id.flash_light:
+                flashLight.startAnimation(fadeOut);
+                Camera.Parameters parameters = mCamera.getParameters();
+                if(flashLightState == OFF){
+                    if(camId == Camera.CameraInfo.CAMERA_FACING_BACK) {
+                        parameters.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+                        mCamera.setParameters(parameters);
+                    }
+                    flashLight.setImageResource(R.mipmap.flashlight);
+                    flashLightState = ON;
+                }else{
+                    parameters.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
+                    mCamera.setParameters(parameters);
+                    flashLight.setImageResource(R.mipmap.flashlight_off);
+                    flashLightState = OFF;
+                }
+                flashLight.startAnimation(fadeIn);
             default:
                 break;
         }
@@ -460,7 +541,7 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
                 fileDir.mkdirs();
             //Save to SBYB folder
             Bitmap mBitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
-            Bitmap mRotatedBitmap = rotateBitmap(mBitmap,mPreview.getCameraOrientation());
+            Bitmap mRotatedBitmap = rotateBitmap(mBitmap);
             String fileName = getOutputFileName(PHOTO_MODE);
             String destinationPath = GALLERY_DIR + fileName;
             FileOutputStream mOutput;
