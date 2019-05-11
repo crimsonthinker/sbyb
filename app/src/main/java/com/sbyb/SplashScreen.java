@@ -6,9 +6,10 @@ import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
+import com.sbyb.photoeditor.*;
 
 public class SplashScreen extends AppCompatActivity {
-    private final int SPLASH_DISPLAY_LENGTH = 2000; //2 seconds
+    private final int SPLASH_DISPLAY_LENGTH = 1000; //2 seconds
     private final int CAMERA_CODE = 1000;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -18,13 +19,19 @@ public class SplashScreen extends AppCompatActivity {
 
         //WAIT THEN MOVE ON TO NEW ACTIVITY
         Handler waitHandler=  new Handler();
-        Runnable cameraActivity = new Runnable() {
+//        Runnable cameraActivity = new Runnable() {
+//            public void run() {
+//                Intent cameraIntent = new Intent(SplashScreen.this, CameraActivity.class);
+//                startActivityForResult(cameraIntent,CAMERA_CODE);
+//            };
+//        };
+        Runnable editorActivity = new Runnable() {
             public void run() {
-                Intent cameraIntent = new Intent(SplashScreen.this, CameraActivity.class);
-                startActivityForResult(cameraIntent,CAMERA_CODE);
+                Intent editorIntent = new Intent(SplashScreen.this, EditImageActivity.class);
+                startActivityForResult(editorIntent,CAMERA_CODE);
             };
         };
-        waitHandler.postDelayed(cameraActivity,SPLASH_DISPLAY_LENGTH);
+        waitHandler.postDelayed(editorActivity,SPLASH_DISPLAY_LENGTH);
     }
 
     //Immersive mode: Use if you want to hide default buttons
