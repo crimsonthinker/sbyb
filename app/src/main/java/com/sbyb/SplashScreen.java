@@ -6,10 +6,9 @@ import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
-import com.sbyb.photoeditor.*;
 
 public class SplashScreen extends AppCompatActivity {
-    private final int SPLASH_DISPLAY_LENGTH = 1000; //2 seconds
+    private final int SPLASH_DISPLAY_LENGTH = 2000; //2 seconds
     private final int CAMERA_CODE = 1000;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,12 +24,14 @@ public class SplashScreen extends AppCompatActivity {
 //                startActivityForResult(cameraIntent,CAMERA_CODE);
 //            };
 //        };
-        Runnable editorActivity = new Runnable() {
+
+        final Runnable editorActivity = new Runnable() {
             public void run() {
                 Intent editorIntent = new Intent(SplashScreen.this, EditImageActivity.class);
                 startActivityForResult(editorIntent,CAMERA_CODE);
             };
         };
+
         waitHandler.postDelayed(editorActivity,SPLASH_DISPLAY_LENGTH);
     }
 

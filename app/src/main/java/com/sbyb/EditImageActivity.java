@@ -68,7 +68,9 @@ public class EditImageActivity extends BaseActivity implements OnPhotoEditorList
     private ConstraintSet mConstraintSet = new ConstraintSet();
     private boolean mIsFilterVisible;
 
-
+    private static final String APP_NAME = "SBYB";
+    private static final String GALLERY_DIR = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES) + File.separator + APP_NAME + File.separator;
+    private String filepath = "";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -108,12 +110,28 @@ public class EditImageActivity extends BaseActivity implements OnPhotoEditorList
 
         //Set Image Dynamically
         // mPhotoEditorView.getSource().setImageResource(R.drawable.color_palette);
+
+        Bundle data = this.getIntent().getExtras();
+        try {
+            mPhotoEditor.clearAllViews();
+            filepath = data.getString("filepath");
+            Uri uri = Uri.parse(filepath);
+            Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
+            mPhotoEditorView.getSource().setImageBitmap(bitmap);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        catch (NullPointerException e) {
+
+        }
+
     }
+
 
     private void initViews() {
         ImageView imgUndo;
         ImageView imgRedo;
-        ImageView imgCamera;
+//        ImageView imgCamera;
         ImageView imgGallery;
         ImageView imgSave;
         ImageView imgClose;
@@ -130,8 +148,8 @@ public class EditImageActivity extends BaseActivity implements OnPhotoEditorList
         imgRedo = findViewById(R.id.imgRedo);
         imgRedo.setOnClickListener(this);
 
-        imgCamera = findViewById(R.id.imgCamera);
-        imgCamera.setOnClickListener(this);
+//        imgCamera = findViewById(R.id.imgCamera);
+//        imgCamera.setOnClickListener(this);
 
         imgGallery = findViewById(R.id.imgGallery);
         imgGallery.setOnClickListener(this);
@@ -202,10 +220,10 @@ public class EditImageActivity extends BaseActivity implements OnPhotoEditorList
                 onBackPressed();
                 break;
 
-            case R.id.imgCamera:
-                Intent cameraIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
-                startActivityForResult(cameraIntent, CAMERA_REQUEST);
-                break;
+//            case R.id.imgCamera:
+//                Intent cameraIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
+//                startActivityForResult(cameraIntent, CAMERA_REQUEST);
+//                break;
 
             case R.id.imgGallery:
                 Intent intent = new Intent();
@@ -220,9 +238,10 @@ public class EditImageActivity extends BaseActivity implements OnPhotoEditorList
     private void saveImage() {
         if (requestPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
             showLoading("Saving...");
-            File file = new File(Environment.getExternalStorageDirectory()
-                    + File.separator + ""
+            File file = new File(GALLERY_DIR
+                    + File.separator +
                     + System.currentTimeMillis() + ".png");
+
             try {
                 file.createNewFile();
 
@@ -235,7 +254,9 @@ public class EditImageActivity extends BaseActivity implements OnPhotoEditorList
                     @Override
                     public void onSuccess(@NonNull String imagePath) {
                         hideLoading();
-                        showSnackbar("Image Saved Successfully");
+                        showSnackbar("Image Saved Successfully at "+GALLERY_DIR
+                                + File.separator
+                                + System.currentTimeMillis() + ".png");
                         mPhotoEditorView.getSource().setImageURI(Uri.fromFile(new File(imagePath)));
                     }
 

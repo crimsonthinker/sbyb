@@ -56,15 +56,15 @@
         app:layout_constraintBottom_toTopOf="@+id/rvConstraintTools"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <ImageView
-        android:id="@+id/imgCamera"
-        android:layout_width="50dp"
-        android:layout_height="wrap_content"
-        android:background="#99000000"
-        android:padding="8dp"
-        android:src="@drawable/ic_camera"
-        app:layout_constraintBottom_toTopOf="@+id/rvConstraintTools"
-        app:layout_constraintStart_toEndOf="@id/imgGallery" />
+    <!--<ImageView-->
+        <!--android:id="@+id/imgCamera"-->
+        <!--android:layout_width="50dp"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:background="#99000000"-->
+        <!--android:padding="8dp"-->
+        <!--android:src="@drawable/ic_camera"-->
+        <!--app:layout_constraintBottom_toTopOf="@+id/rvConstraintTools"-->
+        <!--app:layout_constraintStart_toEndOf="@id/imgGallery" />-->
 
     <ImageView
         android:id="@+id/imgClose"
