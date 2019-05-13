@@ -4,4 +4,12 @@
     <string name="camera_ratio">Camera ratio</string>
     <string name="key_ratio_change">key_ratio_change</string>
     <string name="sum_ratio">Choosing camera ratio according to your device</string>
+	
+	<string name="label_brush">Brush</string>
+    <string name="label_emoji">Emoji</string>
+    <string name="label_sticker">Sticker</string>
+    <string name="label_eraser">Eraser</string>
+    <string name="label_text">Text</string>
+    <string name="label_filter">Filter</string>
+    <string name="label_adjust">Adjust</string>
 </resources>
