@@ -18,21 +18,23 @@ public class SplashScreen extends AppCompatActivity {
 
         //WAIT THEN MOVE ON TO NEW ACTIVITY
         Handler waitHandler=  new Handler();
-//        Runnable cameraActivity = new Runnable() {
-//            public void run() {
-//                Intent cameraIntent = new Intent(SplashScreen.this, CameraActivity.class);
-//                startActivityForResult(cameraIntent,CAMERA_CODE);
-//            };
-//        };
-
-        final Runnable editorActivity = new Runnable() {
+        Runnable cameraActivity = new Runnable() {
             public void run() {
-                Intent editorIntent = new Intent(SplashScreen.this, EditImageActivity.class);
-                startActivityForResult(editorIntent,CAMERA_CODE);
+                Intent cameraIntent = new Intent(SplashScreen.this, CameraActivity.class);
+                startActivityForResult(cameraIntent,CAMERA_CODE);
             };
         };
 
-        waitHandler.postDelayed(editorActivity,SPLASH_DISPLAY_LENGTH);
+        waitHandler.postDelayed(cameraActivity,SPLASH_DISPLAY_LENGTH);
+
+//        final Runnable editorActivity = new Runnable() {
+//            public void run() {
+//                Intent editorIntent = new Intent(SplashScreen.this, EditImageActivity.class);
+//                startActivityForResult(editorIntent,CAMERA_CODE);
+//            };
+//        };
+//
+//        waitHandler.postDelayed(editorActivity,SPLASH_DISPLAY_LENGTH);
     }
 
     //Immersive mode: Use if you want to hide default buttons
