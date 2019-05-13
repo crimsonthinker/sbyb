@@ -64,6 +64,29 @@
         android:src="@mipmap/gallery_button"
         android:background="@null"/>
 
+    <ImageButton
+        android:id="@+id/setting"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        android:paddingLeft="10dp"
+        android:paddingBottom="10dp"
+        android:src="@mipmap/setting"
+        android:background="@null"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/zoom_info"
+        android:background="#ccc"
+        android:textStyle="bold"
+        android:textSize="32dp"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/camera_switcher"
+        app:layout_constraintBottom_toTopOf="@+id/gallery_preview"
+        android:paddingRight="10dp"
+        />
 
     <Switch
         android:id="@+id/mode_switcher"

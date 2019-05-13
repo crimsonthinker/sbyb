@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">SBYB</string>
+    <string name="preference_general">General</string>
+    <string name="camera_ratio">Camera ratio</string>
+    <string name="key_ratio_change">key_ratio_change</string>
+    <string name="sum_ratio">Choosing camera ratio according to your device</string>
 </resources>
