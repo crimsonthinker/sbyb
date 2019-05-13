@@ -5,8 +5,10 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 
 import android.Manifest;
 import android.content.ContentValues;
@@ -25,19 +27,19 @@ import android.hardware.Camera.PictureCallback;
 import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Environment;
-import android.os.Handler;
 import android.provider.MediaStore;
 import android.support.constraint.ConstraintLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.support.v7.widget.SwitchCompat;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.util.Pair;
 import android.view.Display;
+import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -50,6 +52,7 @@ import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.ImageButton;
 import android.widget.Switch;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.opencv.android.BaseLoaderCallback;
@@ -61,6 +64,7 @@ import org.opencv.core.MatOfRect;
 import org.opencv.core.Rect;
 import org.opencv.core.Size;
 import org.opencv.objdetect.CascadeClassifier;
+import org.w3c.dom.Text;
 
 import static android.content.ContentValues.TAG;
 import static android.content.Context.WINDOW_SERVICE;
@@ -91,14 +95,16 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
     private static int camId = Camera.CameraInfo.CAMERA_FACING_FRONT;
     private MediaRecorder mMediaRecorder; //recorder-related attributes
     private int mAudioSource = MediaRecorder.AudioSource.CAMCORDER; //other: DEFAULT MIC UNPROCESSED
-    private int mAudioEncoder = MediaRecorder.AudioEncoder.HE_AAC; //other: DEFAULT AAC AAC_ELD AMR_NB AMR_WB VORBIS(optional)
-    private int mVideoEncoder = MediaRecorder.VideoEncoder.MPEG_4_SP; //other: H263 H264 HEVC VP8
     private boolean recordMode = STOP_RECORDING;
     private String currentVideoFileName = "";
     private String currentVideoFilePath = "";
     private CascadeClassifier faceDetector;
     private boolean flashLightState = OFF;
     private boolean isFlash = false;
+    private List<Camera.Size> previewSizeList;
+    private List<Camera.Size> pictureSizeList;
+    private Camera.Size currentPreviewSize;
+    private Camera.Size currentPictureSize;
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) { //opencv-callback
         @Override
         public void onManagerConnected(int status) {
@@ -135,6 +141,7 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
     private ImageButton cameraSwitcher;
     private ImageButton galleryPreview;
     private ImageButton flashLight;
+    private ImageButton setting;
     private Switch modeSwitcher;
     private Animation blink; //animations
     private Animation fadeIn;
@@ -201,21 +208,21 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
         return new Pair<>(size.x, size.y);
     }
     private void switchCamera() {
-            if (camId == Camera.CameraInfo.CAMERA_FACING_BACK) {
-                flashLight.setVisibility(View.INVISIBLE);
-                camId = Camera.CameraInfo.CAMERA_FACING_FRONT;
-            }
-            else {
-                flashLight.setVisibility(View.VISIBLE);
-                camId = Camera.CameraInfo.CAMERA_FACING_BACK;
-            }
-            if(flashLightState == ON) {
-                flashLightState = OFF;
-                flashLight.setImageResource(R.mipmap.flashlight_off);
-            }
-            releaseMediaRecorder();
-            releaseCamera();
-            cameraSetUp();
+        if (camId == Camera.CameraInfo.CAMERA_FACING_BACK) {
+            flashLight.setVisibility(View.GONE);
+            camId = Camera.CameraInfo.CAMERA_FACING_FRONT;
+        }
+        else {
+            flashLight.setVisibility(View.VISIBLE);
+            camId = Camera.CameraInfo.CAMERA_FACING_BACK;
+        }
+        if(flashLightState == ON) {
+            flashLightState = OFF;
+            flashLight.setImageResource(R.mipmap.flashlight_off);
+        }
+        releaseMediaRecorder();
+        releaseCamera();
+        cameraSetUp();
     }
     private void switchMode(boolean val) {
         cameraButton.startAnimation(fadeOut);
@@ -253,6 +260,10 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
             mCamera.release();
             mCamera = null;
         }
+        Camera.Parameters mParams = mCamera.getParameters();
+        pictureSizeList = mParams.getSupportedPictureSizes();
+        previewSizeList = mParams.getSupportedPreviewSizes();
+
         mPreview = new CameraPreview(CameraActivity.this,mCamera);
         ConstraintLayout preview = findViewById(R.id.camera_preview);
         preview.addView(mPreview);
@@ -374,6 +385,7 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
         modeSwitcher = findViewById(R.id.mode_switcher); modeSwitcher.setOnCheckedChangeListener(this);
         galleryPreview = findViewById(R.id.gallery_preview); galleryPreview.setOnClickListener(this);
         flashLight = findViewById(R.id.flash_light); flashLight.setOnClickListener(this);
+        setting = findViewById(R.id.setting); setting.setOnClickListener(this);
         //3. Check whether there are 2 cameras
         if (Camera.getNumberOfCameras() <= 1){
             cameraSwitcher.setVisibility(View.GONE);
@@ -386,6 +398,7 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
         previewFaceDetection = new PreviewCallback() {
             @Override
             public void onPreviewFrame(byte[] data, Camera camera) {
+                //FOR FACE DETECTION
                 int inputHeight = cHeight + cHeight / 2;
                 int inputWidth = cWidth;
                 //Convert byte to mat
@@ -406,6 +419,11 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
                 } else {
                     //System.out.println("No detection");
                 }
+                //FOR RECORDING MODE
+                if(recordMode == START_RECORDING) {
+                    cameraButton.setImageResource(R.mipmap.record_button_blink);
+                }
+
             }
         };
         isFlash = getApplicationContext().getPackageManager()
@@ -466,7 +484,8 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
     public void onClick(View view) {
         switch(view.getId()){
             case R.id.camera_switcher:// switching camera
-                view.startAnimation(blink);
+                AnimationParam fadeOutAnimation = new AnimationParam(getApplicationContext(),view,Arrays.asList(blink));
+                new AsyncAnimation().execute(fadeOutAnimation);
                 switchCamera();
                 break;
             case R.id.camera_button:
@@ -488,6 +507,7 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
                     }else{
                         Toast.makeText(getApplicationContext(), "Stop recording", Toast.LENGTH_SHORT).show();
                         Boolean isSavable = true;
+                        cameraButton.setImageResource(R.mipmap.record_button);
                         try {
                             mMediaRecorder.stop();
                         }catch(Exception e){
@@ -517,6 +537,20 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
                     flashLightState = OFF;
                 }
                 flashLight.startAnimation(fadeIn);
+                flashLight.setVisibility(View.VISIBLE);
+                break;
+            case R.id.setting:
+                //get
+                Camera.Parameters camParams = mCamera.getParameters();
+                List<Camera.Size> sizes = camParams.getSupportedPictureSizes();
+                List<Camera.Size> camSizes = camParams.getSupportedPreviewSizes();
+                for(int i = 0 ; i < sizes.size(); i++){
+                    Toast.makeText(getApplicationContext(),"Picture size: " + sizes.get(i).width + " " + sizes.get(i).height,Toast.LENGTH_SHORT).show();
+                }
+                for(int i = 0 ; i < camSizes.size(); i++){
+                    Toast.makeText(getApplicationContext(),"Camera size: " + camSizes.get(i).width + " " + camSizes.get(i).height,Toast.LENGTH_SHORT).show();
+                }
+                break;
             default:
                 break;
         }
@@ -578,16 +612,21 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
 class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
     //PARAMETERS
     /**********************************************************************************************/
+    private static int FOCUS_AREA_SIZE = 300;
     private SurfaceHolder mHolder; //holder for camera
     private Camera mCamera;
+    private Context mContext;
     private int cameraOrientation;
     private int cameraDegree;
+    private TextView zoomValue;
+    private float mDist = 0;
     /**********************************************************************************************/
 
     //CONSTRUCTOR
     /**********************************************************************************************/
     public CameraPreview(Context context, Camera camera) {
         super(context);
+        mContext = context;
         mCamera = camera;
         // Install a SurfaceHolder.Callback so we get notified when th
         // underlying surface is created and destroyed.
@@ -595,17 +634,74 @@ class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
         mHolder.addCallback(this);
         // deprecated setting, but required on Android versions prior to 3.0
         mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-
         cameraOrientation = Surface.ROTATION_90;
+        zoomValue = ((AppCompatActivity) mContext).findViewById(R.id.zoom_info);
+        zoomValue.setVisibility(View.INVISIBLE);
     }
     /**********************************************************************************************/
 
     //FUNCTION
-    public int getCameraOrientation(){
-        return cameraOrientation;
-    }
     public int getCameraDegree() {
         return cameraDegree;
+    }
+    private float getFingerSpacing(MotionEvent event) {
+        // ...
+        float x = event.getX(0) - event.getX(1);
+        float y = event.getY(0) - event.getY(1);
+        return (float)Math.sqrt(x * x + y * y);
+    }
+    private int clamp(int touchCoordinateInCameraReper, int focusAreaSize) {
+        int result;
+        if (Math.abs(touchCoordinateInCameraReper)+focusAreaSize/2>1000){
+            if (touchCoordinateInCameraReper>0){
+                result = 1000 - focusAreaSize/2;
+            } else {
+                result = -1000 + focusAreaSize/2;
+            }
+        } else{
+            result = touchCoordinateInCameraReper - focusAreaSize/2;
+        }
+        return result;
+    }
+    private android.graphics.Rect calculateFocusArea(float x, float y) {
+        int left = clamp(Float.valueOf((x / this.getWidth()) * 2000 - 1000).intValue(), FOCUS_AREA_SIZE);
+        int top = clamp(Float.valueOf((y / this.getHeight()) * 2000 - 1000).intValue(), FOCUS_AREA_SIZE);
+
+        return new android.graphics.Rect(left, top, left + FOCUS_AREA_SIZE, top + FOCUS_AREA_SIZE);
+    }
+    private void handleZoom(MotionEvent event, Camera.Parameters params) {
+        int maxZoom = params.getMaxZoom();
+        int zoom = params.getZoom();
+        float newDist = getFingerSpacing(event);
+        if (newDist > mDist) {
+            // zoom in
+            if (zoom < maxZoom)
+                zoom++;
+        } else if (newDist < mDist) {
+            // zoom out
+            if (zoom > 0)
+                zoom--;
+        }
+        mDist = newDist;
+        params.setZoom(zoom);
+        mCamera.setParameters(params);
+    }
+    public void handleFocus(MotionEvent event, Camera.Parameters params) { //touch focus
+        if (params.getMaxNumMeteringAreas() > 0){
+            android.graphics.Rect rect = calculateFocusArea(event.getX(), event.getY());
+
+            List<Camera.Area> meteringAreas = new ArrayList<>();
+            meteringAreas.add(new Camera.Area(rect, 800));
+            params.setFocusAreas(meteringAreas);
+            try {
+                mCamera.setParameters(params);
+            }catch(Exception e){
+
+            }
+            //mCamera.autoFocus(mAutoFocusTakePictureCallback);
+        }else {
+            //mCamera.autoFocus(mAutoFocusTakePictureCallback);
+        }
     }
     //CALLBACKS
     /**********************************************************************************************/
@@ -672,6 +768,25 @@ class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
         mCamera.setPreviewCallback(null);
         mCamera.release();
         mCamera = null;
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event){
+        Camera.Parameters params = mCamera.getParameters();
+        int action = event.getAction();
+        if(event.getPointerCount() > 1){
+            //multi-touch event
+            if(action == MotionEvent.ACTION_POINTER_DOWN){
+                mDist = getFingerSpacing(event);
+            }else if(action == MotionEvent.ACTION_MOVE && params.isZoomSupported()){
+                mCamera.cancelAutoFocus();
+                handleZoom(event,params);
+            }
+        }else if(action == MotionEvent.ACTION_UP){
+            Toast.makeText(getContext(),"Hello",Toast.LENGTH_SHORT).show();
+            handleFocus(event,params);
+        }
+        return true;
     }
 }
 /**********************************************************************************************/
