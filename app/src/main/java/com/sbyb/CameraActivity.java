@@ -1,9 +1,11 @@
 package com.sbyb;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,8 +21,15 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.ImageFormat;
 import android.graphics.Matrix;
+import android.graphics.Paint;
+import android.graphics.PixelFormat;
 import android.graphics.Point;
+import android.graphics.PorterDuff;
+import android.graphics.YuvImage;
 import android.hardware.Camera;
 import android.hardware.Camera.PreviewCallback;
 import android.hardware.Camera.PictureCallback;
@@ -58,11 +67,13 @@ import android.widget.Toast;
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfRect;
 import org.opencv.core.Rect;
 import org.opencv.core.Size;
+import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
 import org.w3c.dom.Text;
 
@@ -80,12 +91,13 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
     private static final int PERMISSION_REQUEST_CODE = 200;
     private static final boolean START_RECORDING = true;
     private static final boolean STOP_RECORDING = false;
+    private float mRelativeFaceSize = 0.2f;
     private static final String  MEDIA_TAG = "MediaRecording";
     private static final String VIDEO_DIR = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES) + File.separator + APP_NAME + File.separator;
     private static final String GALLERY_DIR = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES) + File.separator + APP_NAME + File.separator;
     private static PreviewCallback previewFaceDetection;
     private static final int MIN_FACE_SCALE = 15;
-    private static final int MAX_FACE_SCALE = 2;
+    private static final int MAX_FACE_SCALE = 1;
     //Other attributes
     private int cWidth; //size of someth3ing?
     private int cHeight;
@@ -105,6 +117,8 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
     private List<Camera.Size> pictureSizeList;
     private Camera.Size currentPreviewSize;
     private Camera.Size currentPictureSize;
+    private SurfaceView transparentView;
+    private SurfaceHolder mHolderTransparent;
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) { //opencv-callback
         @Override
         public void onManagerConnected(int status) {
@@ -208,7 +222,10 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
         return new Pair<>(size.x, size.y);
     }
     private void switchCamera() {
-        if (camId == Camera.CameraInfo.CAMERA_FACING_BACK) {
+        Canvas canvas = mHolderTransparent.lockCanvas(null);
+        canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
+        mHolderTransparent.unlockCanvasAndPost(canvas);
+        if (camId == Camera.CameraInfo.CAMERA_FACING_BACK) { ;
             flashLight.setVisibility(View.GONE);
             camId = Camera.CameraInfo.CAMERA_FACING_FRONT;
         }
@@ -263,10 +280,21 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
         Camera.Parameters mParams = mCamera.getParameters();
         pictureSizeList = mParams.getSupportedPictureSizes();
         previewSizeList = mParams.getSupportedPreviewSizes();
+        mParams.setPreviewSize(previewSizeList.get(0).width,previewSizeList.get(0).height);
+        mCamera.setParameters(mParams);
 
         mPreview = new CameraPreview(CameraActivity.this,mCamera);
         ConstraintLayout preview = findViewById(R.id.camera_preview);
         preview.addView(mPreview);
+
+        transparentView = findViewById(R.id.transparent_view);
+        transparentView.setZOrderOnTop(true);
+        mHolderTransparent = transparentView.getHolder();
+        mHolderTransparent.setFormat(PixelFormat.TRANSPARENT);
+
+        Camera.Parameters cameraParameters = mCamera.getParameters();
+        cWidth = cameraParameters.getPreviewSize().width;
+        cHeight = cameraParameters.getPreviewSize().height;
     }
     private void recordSetUp() {
         try {
@@ -397,24 +425,43 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
         //5.
         previewFaceDetection = new PreviewCallback() {
             @Override
-            public void onPreviewFrame(byte[] data, Camera camera) {
+            public void onPreviewFrame(final byte[] data, Camera camera) {
+                Canvas canvas = mHolderTransparent.lockCanvas(null);
+                canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
                 //FOR FACE DETECTION
-                int inputHeight = cHeight + cHeight / 2;
-                int inputWidth = cWidth;
-                //Convert byte to mat
-                Mat m = new Mat(inputHeight, inputWidth, CvType.CV_8UC1);
-                m.put(0, 0, data);
+                Camera.Parameters cameraParameters = camera.getParameters();
+                YuvImage yuvimage=new YuvImage(data,cameraParameters.getPreviewFormat(),cWidth,cHeight,null);
+                ByteArrayOutputStream outstr = new ByteArrayOutputStream();
+                android.graphics.Rect rect = new android.graphics.Rect(0, 0, cWidth, cHeight);
+                yuvimage.compressToJpeg(rect, 100, outstr);
+                byte[] bytes = outstr.toByteArray();
+                Bitmap bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                Bitmap bitmap = bmp.copy(Bitmap.Config.ARGB_8888,true);
+                Bitmap rBitmap = rotateBitmap(bitmap);
+                Mat m = new Mat();
+                Utils.bitmapToMat(rBitmap,m);
+                Mat finalMat = new Mat(m.height(),m.width(),CvType.CV_8UC1);
+                Imgproc.cvtColor(m, finalMat, Imgproc.COLOR_RGB2GRAY);
                 MatOfRect faceVectors = new MatOfRect();
                 if (faceDetector != null) {
                     if (!faceDetector.empty()) {
-                        int minFace = inputHeight / MIN_FACE_SCALE;
-                        int maxFace = inputHeight / MAX_FACE_SCALE;
-                        faceDetector.detectMultiScale(m, faceVectors, 2, 1, 0, new Size(minFace, minFace), new Size(maxFace, maxFace));
+                        int height = m.rows();
+                        int mAbsoluteFaceSize = Math.round(height * mRelativeFaceSize);
+                        faceDetector.detectMultiScale(finalMat, faceVectors, 1.1, 4, 2, new Size(mAbsoluteFaceSize, mAbsoluteFaceSize), new Size());
                     }
                 }
                 Rect[] faceResult = faceVectors.toArray();
                 if (faceResult.length != 0) {
-                    //Toast.makeText(CameraActivity.this,faceResult[0].toString(),Toast.LENGTH_SHORT).show();
+                    android.graphics.Rect face;
+                    Paint  paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    paint.setStyle(Paint.Style.STROKE);
+                    paint.setColor(Color.GREEN);
+                    paint.setStrokeWidth(3);
+                    for(int i = 0 ; i < faceResult.length; i++){
+                        face = new android.graphics.Rect(faceResult[i].x,faceResult[i].y,faceResult[i].x + faceResult[i].width,faceResult[i].y + faceResult[i].height);
+                        canvas.drawRect(face,paint);
+                        System.out.println(faceResult[i].toString());
+                    }
                     //do something else with this
                 } else {
                     //System.out.println("No detection");
@@ -423,7 +470,7 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
                 if(recordMode == START_RECORDING) {
                     cameraButton.setImageResource(R.mipmap.record_button_blink);
                 }
-
+                mHolderTransparent.unlockCanvasAndPost(canvas);
             }
         };
         isFlash = getApplicationContext().getPackageManager()
@@ -437,9 +484,6 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
     protected void onStart() {
         //1. Get screen size
         super.onStart();
-        Pair<Integer,Integer> size = this.getScreenSize();
-        cWidth = size.first;
-        cHeight = size.second;
     }
 
     @Override
