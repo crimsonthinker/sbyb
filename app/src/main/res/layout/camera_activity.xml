@@ -26,10 +26,9 @@
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         android:paddingBottom="10dp"
-        android:src="@mipmap/photo_button"
+        android:src="@drawable/photo_button_blink"
         android:background="@null"
-        android:scaleX="1.5"
-        android:scaleY="1.5"/>
+        android:layout_margin="20dp"/>
 
     <ImageButton
         android:id="@+id/camera_switcher"
@@ -37,10 +36,9 @@
         android:layout_height="wrap_content"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        android:paddingRight="10dp"
-        android:paddingTop="10dp"
-        android:src="@mipmap/camera_switcher"
-        android:background="@null"/>
+        android:src="@drawable/camera_switcher"
+        android:background="@null"
+        android:layout_margin="20dp"/>
 
     <ImageButton
         android:id="@+id/flash_light"
@@ -50,8 +48,9 @@
         app:layout_constraintLeft_toLeftOf="parent"
         android:paddingLeft="10dp"
         android:paddingTop="10dp"
-        android:src="@mipmap/flashlight_off"
-        android:background="@null"/>
+        android:src="@drawable/flashlight_off"
+        android:background="@null"
+        android:layout_margin="20dp"/>
 
     <ImageButton
         android:id="@+id/gallery_preview"
@@ -61,8 +60,9 @@
         app:layout_constraintRight_toRightOf="parent"
         android:paddingRight="10dp"
         android:paddingBottom="10dp"
-        android:src="@mipmap/gallery_button"
-        android:background="@null"/>
+        android:src="@drawable/gallery"
+        android:background="@null"
+        android:layout_margin="20dp"/>
 
     <ImageButton
         android:id="@+id/setting"
@@ -72,8 +72,9 @@
         app:layout_constraintLeft_toLeftOf="parent"
         android:paddingLeft="10dp"
         android:paddingBottom="10dp"
-        android:src="@mipmap/setting"
-        android:background="@null"/>
+        android:src="@drawable/setting"
+        android:background="@null"
+        android:layout_margin="20dp"/>
 
     <TextView
         android:layout_width="wrap_content"
@@ -91,7 +92,7 @@
     <Switch
         android:id="@+id/mode_switcher"
         android:track="@drawable/switch_track"
-        android:thumb="@mipmap/photo_switch_mode"
+        android:thumb="@drawable/camera_mode"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:layout_constraintTop_toTopOf="parent"

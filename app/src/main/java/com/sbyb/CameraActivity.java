@@ -190,7 +190,7 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
         catch (Exception e) {
             AlertDialog.Builder noCameraBuilder = new AlertDialog.Builder(this);
             noCameraBuilder.setTitle(R.string.app_name);
-            noCameraBuilder.setIcon(R.mipmap.lotus);
+            noCameraBuilder.setIcon(R.mipmap.ic_launcher);
             noCameraBuilder.setMessage("No camera found! Please check your device and try again.");
             noCameraBuilder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int id) {
@@ -245,11 +245,11 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
         cameraButton.startAnimation(fadeOut);
         releaseMediaRecorder();
         if (val == PHOTO_MODE){
-            cameraButton.setImageResource(R.mipmap.photo_button);
-            modeSwitcher.setThumbResource(R.mipmap.photo_switch_mode);
+            cameraButton.setImageResource(R.drawable.photo_button_blink);
+            modeSwitcher.setThumbResource(R.drawable.camera_mode);
         }else {
-            cameraButton.setImageResource(R.mipmap.record_button);
-            modeSwitcher.setThumbResource(R.mipmap.record_switch_mode);
+            cameraButton.setImageResource(R.drawable.record_button);
+            modeSwitcher.setThumbResource(R.drawable.record_mode);
         }
         cameraButton.startAnimation(fadeIn);
         camMode = val;
@@ -466,10 +466,10 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
                 } else {
                     //System.out.println("No detection");
                 }
-                //FOR RECORDING MODE
-                if(recordMode == START_RECORDING) {
-                    cameraButton.setImageResource(R.mipmap.record_button_blink);
-                }
+//                //FOR RECORDING MODE
+//                if(recordMode == START_RECORDING) {
+//                    cameraButton.setImageResource(R.drawable.record_button);
+//                }
                 mHolderTransparent.unlockCanvasAndPost(canvas);
             }
         };
@@ -551,7 +551,7 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
                     }else{
                         Toast.makeText(getApplicationContext(), "Stop recording", Toast.LENGTH_SHORT).show();
                         Boolean isSavable = true;
-                        cameraButton.setImageResource(R.mipmap.record_button);
+//                        cameraButton.setImageResource(R.drawable.record_button);
                         try {
                             mMediaRecorder.stop();
                         }catch(Exception e){
@@ -572,12 +572,12 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
                         parameters.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
                         mCamera.setParameters(parameters);
                     }
-                    flashLight.setImageResource(R.mipmap.flashlight);
+//                    flashLight.setImageResource(R.drawable.flashlight_off);
                     flashLightState = ON;
                 }else{
                     parameters.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
                     mCamera.setParameters(parameters);
-                    flashLight.setImageResource(R.mipmap.flashlight_off);
+//                    flashLight.setImageResource(R.drawable.flashlight_off);
                     flashLightState = OFF;
                 }
                 flashLight.startAnimation(fadeIn);
