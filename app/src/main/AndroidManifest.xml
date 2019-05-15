@@ -46,6 +46,14 @@
         <activity
             android:name=".EditImageActivity">
         </activity>
+
+        <activity android:name=".PhotoActivity"
+            android:configChanges="orientation|screenSize"/>
+
+        <activity android:name=".Gallery"
+            android:configChanges="orientation|screenSize"/>
+        <activity android:name=".VideoActivity"
+            android:configChanges="orientation|screenSize"/>
     </application>
 
 </manifest>

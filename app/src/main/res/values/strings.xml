@@ -12,4 +12,14 @@
     <string name="label_text">Text</string>
     <string name="label_filter">Filter</string>
     <string name="label_adjust">Adjust</string>
+
+    <string name="h_nh_nh">Hình ảnh</string>
+    <string name="video_clips">Video/Clips</string>
+    <string name="p">P</string>
+    <string name="v">V</string>
+    <string name="title">Title</string>
+    <string name="todo">TODO</string>
+    <string name="gallery">Gallery</string>
+    <string name="this_is_some">This is some</string>
+    <string name="this_is_splash_screen_do_something_about_it">This is splash screen, do something about it</string>
 </resources>

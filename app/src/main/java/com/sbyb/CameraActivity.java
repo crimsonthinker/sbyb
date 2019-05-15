@@ -595,6 +595,10 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
                     Toast.makeText(getApplicationContext(),"Camera size: " + camSizes.get(i).width + " " + camSizes.get(i).height,Toast.LENGTH_SHORT).show();
                 }
                 break;
+            case R.id.gallery_preview:
+                Intent intent = new Intent(CameraActivity.this, Gallery.class);
+                startActivity(intent);
+                break;
             default:
                 break;
         }
