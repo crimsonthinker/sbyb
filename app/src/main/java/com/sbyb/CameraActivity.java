@@ -1,17 +1,5 @@
 package com.sbyb;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-
 import android.Manifest;
 import android.content.ContentValues;
 import android.content.Context;
@@ -23,7 +11,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
@@ -31,20 +18,19 @@ import android.graphics.Point;
 import android.graphics.PorterDuff;
 import android.graphics.YuvImage;
 import android.hardware.Camera;
-import android.hardware.Camera.PreviewCallback;
 import android.hardware.Camera.PictureCallback;
+import android.hardware.Camera.PreviewCallback;
 import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
 import android.net.Uri;
-import android.os.AsyncTask;
+import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.constraint.ConstraintLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.util.Pair;
 import android.view.Display;
@@ -60,9 +46,12 @@ import android.view.animation.AnimationUtils;
 import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.bumptech.glide.Glide;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
@@ -75,7 +64,17 @@ import org.opencv.core.Rect;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
-import org.w3c.dom.Text;
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
 
 import static android.content.ContentValues.TAG;
 import static android.content.Context.WINDOW_SERVICE;
@@ -160,6 +159,11 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
     private Animation blink; //animations
     private Animation fadeIn;
     private Animation fadeOut;
+    private ImageView thumbnailView;
+
+    /* Files */
+    File dir = new File(GALLERY_DIR);
+    File[] files;
     /**********************************************************************************************/
 
     //SUPPORTING FUNCTIONS
@@ -225,7 +229,7 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
         Canvas canvas = mHolderTransparent.lockCanvas(null);
         canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
         mHolderTransparent.unlockCanvasAndPost(canvas);
-        if (camId == Camera.CameraInfo.CAMERA_FACING_BACK) { ;
+        if (camId == Camera.CameraInfo.CAMERA_FACING_BACK) {
             flashLight.setVisibility(View.GONE);
             camId = Camera.CameraInfo.CAMERA_FACING_FRONT;
         }
@@ -356,6 +360,14 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
         Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
         mediaScanIntent.setData(savedVideo);
         this.sendBroadcast(mediaScanIntent);
+
+        /* thumbnail */
+        Glide.with(this)
+                .asBitmap()
+                .load( Uri.fromFile(videoFile) )
+                .fitCenter()
+                .circleCrop()
+                .into(thumbnailView);
     }
 
     int getRecordOrientation() {
@@ -393,6 +405,21 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
                 return 0f; //ok
         }
         return 0f;
+    }
+
+    Boolean isFileExist(){
+        if (dir == null) {
+            //TODO: Popup a window display "no files" message
+            Toast.makeText(this, "No files", Toast.LENGTH_LONG).show();
+            return false;
+        }
+        files = dir.listFiles();
+        if (files == null || files.length == 0){
+            //TODO: Popup a window display "no files" message
+            Toast.makeText(this, "No files", Toast.LENGTH_LONG).show();
+            return false;
+        }
+        return true;
     }
     /**********************************************************************************************/
 
@@ -478,6 +505,34 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
         if(!isFlash || camId == Camera.CameraInfo.CAMERA_FACING_FRONT) {
             flashLight.setVisibility(View.INVISIBLE);
         }
+
+        /* Thumbnail */
+        thumbnailView = findViewById(R.id.viewImageVideoThumbnail);
+
+        if ( isFileExist() ) {
+            if (ScreenSlidePagerActivity.isImageFile( files[files.length - 1].getAbsolutePath() ) ) {
+                /*Bitmap thumbImage = ThumbnailUtils.extractThumbnail(
+                        BitmapFactory.decodeFile(files[files.length - 1].getAbsolutePath())
+                        , 200
+                        , 200);
+                thumbnailView.setImageBitmap(thumbImage);*/
+                Glide.with(this)
+                        .load( files[files.length - 1] )
+                        .fitCenter()
+                        .circleCrop()
+                        .into(thumbnailView);
+            }
+            else //if ( ScreenSlidePagerActivity.isVideoFile( files[files.length - 1].getAbsolutePath() ) )
+            {
+                Glide.with(this)
+                        .asBitmap()
+                        .load( Uri.fromFile(files[files.length - 1]) )
+                        .thumbnail()
+                        .circleCrop()
+                        .into(thumbnailView);
+            }
+        }
+
     }
 
     @Override
@@ -595,6 +650,17 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
                     Toast.makeText(getApplicationContext(),"Camera size: " + camSizes.get(i).width + " " + camSizes.get(i).height,Toast.LENGTH_SHORT).show();
                 }
                 break;
+            case R.id.viewImageVideoThumbnail:
+//                TODO: Start ScreenSlidePagerActivity
+                if ( !isFileExist() ) break;
+
+                Intent viewImageVideoIntent = new Intent(this
+                        , ScreenSlidePagerActivity.class);
+                viewImageVideoIntent.putExtra("PARENT_ACTIVITY", "CameraActivity");
+                viewImageVideoIntent.putExtra("DIR", GALLERY_DIR);
+                startActivity(viewImageVideoIntent);
+
+
             default:
                 break;
         }
@@ -636,7 +702,17 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
             this.sendBroadcast(mediaScanIntent);
             mCamera.stopPreview();
             mCamera.startPreview();
-        }
+
+            /* Set thumbnail */
+            /*thumbnailView.setImageBitmap( ThumbnailUtils.extractThumbnail(mRotatedBitmap
+                    , thumbnailView.getWidth()
+                    , thumbnailView.getHeight() ) );*/
+            Glide.with(this)
+                    .asBitmap()
+                    .load(mRotatedBitmap)
+                    .fitCenter()
+                    .circleCrop()
+                    .into(thumbnailView);        }
     }
 
     @Override
