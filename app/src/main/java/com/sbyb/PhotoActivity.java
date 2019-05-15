@@ -9,7 +9,7 @@ import com.bumptech.glide.Glide;
 
 import java.io.File;
 
-public class GalleryPhotoPreview extends AppCompatActivity {
+public class PhotoActivity extends AppCompatActivity {
 
     ImageView GalleryPreviewImg;
     String path;
@@ -17,11 +17,11 @@ public class GalleryPhotoPreview extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 //        getSupportActionBar().hide();
-        setContentView(R.layout.gallery_preview_photo);
+        setContentView(R.layout.preview_photo);
         Intent intent = getIntent();
         path = intent.getStringExtra("path");
         GalleryPreviewImg = (ImageView) findViewById(R.id.GalleryPreviewImg);
-        Glide.with(GalleryPhotoPreview.this)
+        Glide.with(PhotoActivity.this)
                 .load(new File(path)) // Uri of the picture
                 .into(GalleryPreviewImg);
     }

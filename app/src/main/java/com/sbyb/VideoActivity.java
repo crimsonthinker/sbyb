@@ -1,6 +1,7 @@
 package com.sbyb;
 
 import android.app.Activity;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.widget.VideoView;
 import android.widget.MediaController;
@@ -11,25 +12,31 @@ public class VideoActivity extends Activity {
 
     String str_video;
     VideoView vv_video;
+    MediaController mv;
     private int position = 0;
     private MediaController mediaController;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.gallery_preview_video);
+        setContentView(R.layout.preview_video);
         init();
     }
 
     private void init() {
 
         vv_video = (VideoView) findViewById(R.id.vv_video);
+//        vv_video_2 = (VideoView) findViewById(R.id.vv_video_2);
+        mv = (MediaController) findViewById(R.id.media_controller_);
 
         if (mediaController == null) {
             mediaController = new MediaController(VideoActivity.this);
+            mediaController.setBackgroundColor(Color.parseColor("#0099CC00"));
 
-            // Neo vị trí của MediaController với VideoView.
-            mediaController.setAnchorView(vv_video);
+            mediaController.setBackgroundResource(android.R.color.transparent);
+            mediaController.setBackground(getResources().getDrawable(R.drawable.portallogo));
+//             Neo vị trí của MediaController với VideoView.
+            mediaController.setAnchorView(mv);
 
 
             // Sét đặt bộ điều khiển cho VideoView.
@@ -41,7 +48,6 @@ public class VideoActivity extends Activity {
 //        vv_video.start();
 
         vv_video.requestFocus();
-
         vv_video.setOnPreparedListener(new OnPreparedListener() {
 
             public void onPrepared(MediaPlayer mediaPlayer) {
@@ -57,10 +63,17 @@ public class VideoActivity extends Activity {
                     @Override
                     public void onVideoSizeChanged(MediaPlayer mp, int width, int height) {
 
-                        // Neo lại vị trí của bộ điều khiển của nó vào VideoView.
-                        mediaController.setAnchorView(vv_video);
+//                         Neo lại vị trí của bộ điều khiển của nó vào VideoView.
+                        mediaController.setAnchorView(mv);
                     }
                 });
+            }
+        });
+
+        vv_video.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+            @Override
+            public void onCompletion(MediaPlayer mp) {
+                vv_video.start();
             }
         });
     }

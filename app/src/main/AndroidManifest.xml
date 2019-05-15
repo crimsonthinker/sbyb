@@ -45,14 +45,10 @@
 
         </activity>
 
-        <activity android:name=".GalleryPhotoPreview"
+        <activity android:name=".PhotoActivity"
             android:configChanges="orientation|screenSize"/>
 
-        <activity android:name=".AlbumPhotoActivity"
-            android:configChanges="orientation|screenSize"/>
         <activity android:name=".Gallery"
-            android:configChanges="orientation|screenSize"/>
-        <activity android:name=".AlbumVideoActivity" 
             android:configChanges="orientation|screenSize"/>
         <activity android:name=".VideoActivity"
             android:configChanges="orientation|screenSize"/>

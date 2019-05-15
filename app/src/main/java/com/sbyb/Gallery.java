@@ -12,7 +12,6 @@ import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,11 +19,8 @@ import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.GridView;
 import android.widget.ImageView;
-import android.widget.VideoView;
 
 import com.bumptech.glide.Glide;
-
-import org.opencv.video.Video;
 
 import java.io.File;
 import java.net.URLConnection;
@@ -37,7 +33,6 @@ import java.util.HashMap;
 public class Gallery extends AppCompatActivity {
     GridView galleryGridView;
     ArrayList<HashMap<String, String>> imageList = new ArrayList<HashMap<String, String>>();
-    String album_name = "";
     LoadAlbumImages loadAlbumTask;
 
 
@@ -45,7 +40,7 @@ public class Gallery extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        setContentView(R.layout.activity_album_photo);
+        setContentView(R.layout.activity_gallery);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar_photo);
         setSupportActionBar(toolbar);
 
@@ -122,18 +117,18 @@ public class Gallery extends AppCompatActivity {
         @Override
         protected void onPostExecute(String xml) {
 
-            SingleAlbumAdapter adapter = new SingleAlbumAdapter(AlbumPhotoActivity.this, imageList);
+            SingleAlbumAdapter adapter = new SingleAlbumAdapter(Gallery.this, imageList);
             galleryGridView.setAdapter(adapter);
             galleryGridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 public void onItemClick(AdapterView<?> parent, View view,
                                         final int position, long id) {
                     String t = imageList.get(+position).get(FunctionPhoto.KEY_PATH);
                     if(isVideoFile(t)){
-                        Intent intent = new Intent((AlbumPhotoActivity.this), VideoActivity.class);
+                        Intent intent = new Intent((Gallery.this), VideoActivity.class);
                         intent.putExtra("video",t);
                         startActivity(intent);
                     }else {
-                        Intent intent = new Intent(AlbumPhotoActivity.this, GalleryPhotoPreview.class);
+                        Intent intent = new Intent(Gallery.this, PhotoActivity.class);
                         intent.putExtra("path", t);
                         startActivity(intent);
                     }
@@ -173,7 +168,7 @@ class SingleAlbumAdapter extends BaseAdapter {
             if(isImageFile(data.get(position).get(FunctionPhoto.KEY_PATH))) {
                 holder = new SingleAlbumViewHolder();
                 convertView = LayoutInflater.from(activity).inflate(
-                        R.layout.single_photo_album_row, parent, false);
+                        R.layout.photo_adapter, parent, false);
 
                 holder.galleryImage = (ImageView) convertView.findViewById(R.id.galleryImage);
 

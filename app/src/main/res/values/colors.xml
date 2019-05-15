@@ -5,4 +5,8 @@
     <color name="colorAccent">#D81B60</color>
     <color name="photoSwitchColor">#F25A78</color>
     <color name="recordSwitchColor">#FFFF77</color>
+
+        <color name="NoTransparent">#FF99CC00</color>
+        <color name="AlmostTransparent">#4499CC00</color>
+        <color name="FullTransparent">#0099CC00</color>
 </resources>
