@@ -60,9 +60,12 @@ import android.view.animation.AnimationUtils;
 import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.bumptech.glide.Glide;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
@@ -160,6 +163,12 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
     private Animation blink; //animations
     private Animation fadeIn;
     private Animation fadeOut;
+    private ImageView thumbnailView;
+
+    /* Files */
+    File dir = new File(GALLERY_DIR);
+    File[] files;
+
     /**********************************************************************************************/
 
     //SUPPORTING FUNCTIONS
@@ -356,6 +365,14 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
         Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
         mediaScanIntent.setData(savedVideo);
         this.sendBroadcast(mediaScanIntent);
+
+        /* thumbnail */
+        Glide.with(this)
+                .asBitmap()
+                .load( Uri.fromFile(videoFile) )
+                .fitCenter()
+                .circleCrop()
+                .into(thumbnailView);
     }
 
     int getRecordOrientation() {
@@ -394,6 +411,23 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
         }
         return 0f;
     }
+
+
+    Boolean isFileExist(){
+        if (dir == null) {
+            //TODO: Popup a window display "no files" message
+            Toast.makeText(this, "No files", Toast.LENGTH_LONG).show();
+            return false;
+        }
+        files = dir.listFiles();
+        if (files == null || files.length == 0){
+            //TODO: Popup a window display "no files" message
+            Toast.makeText(this, "No files", Toast.LENGTH_LONG).show();
+            return false;
+        }
+        return true;
+    }
+
     /**********************************************************************************************/
 
     //CALLBACKS
@@ -477,6 +511,33 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
                 .hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH);
         if(!isFlash || camId == Camera.CameraInfo.CAMERA_FACING_FRONT) {
             flashLight.setVisibility(View.INVISIBLE);
+        }
+
+        /* Thumbnail */
+        thumbnailView = findViewById(R.id.viewImageVideoThumbnail);
+
+        if ( isFileExist() ) {
+            if (ScreenSlidePagerActivity.isImageFile( files[files.length - 1].getAbsolutePath() ) ) {
+                /*Bitmap thumbImage = ThumbnailUtils.extractThumbnail(
+                        BitmapFactory.decodeFile(files[files.length - 1].getAbsolutePath())
+                        , 200
+                        , 200);
+                thumbnailView.setImageBitmap(thumbImage);*/
+                Glide.with(this)
+                        .load( files[files.length - 1] )
+                        .fitCenter()
+                        .circleCrop()
+                        .into(thumbnailView);
+            }
+            else //if ( ScreenSlidePagerActivity.isVideoFile( files[files.length - 1].getAbsolutePath() ) )
+            {
+                Glide.with(this)
+                        .asBitmap()
+                        .load( Uri.fromFile(files[files.length - 1]) )
+                        .thumbnail()
+                        .circleCrop()
+                        .into(thumbnailView);
+            }
         }
     }
 
@@ -599,6 +660,15 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
                 Intent intent = new Intent(CameraActivity.this, Gallery.class);
                 startActivity(intent);
                 break;
+            case R.id.viewImageVideoThumbnail:
+//                TODO: Start ScreenSlidePagerActivity
+                if ( !isFileExist() ) break;
+
+                Intent viewImageVideoIntent = new Intent(this
+                        , ScreenSlidePagerActivity.class);
+                viewImageVideoIntent.putExtra("PARENT_ACTIVITY", "CameraActivity");
+                viewImageVideoIntent.putExtra("DIR", GALLERY_DIR);
+                startActivity(viewImageVideoIntent);
             default:
                 break;
         }
@@ -640,7 +710,20 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
             this.sendBroadcast(mediaScanIntent);
             mCamera.stopPreview();
             mCamera.startPreview();
+
+            /* Set thumbnail */
+            /*thumbnailView.setImageBitmap( ThumbnailUtils.extractThumbnail(mRotatedBitmap
+                    , thumbnailView.getWidth()
+                    , thumbnailView.getHeight() ) );*/
+            Glide.with(this)
+                    .asBitmap()
+                    .load(mRotatedBitmap)
+                    .fitCenter()
+                    .circleCrop()
+                    .into(thumbnailView);
         }
+
+
     }
 
     @Override

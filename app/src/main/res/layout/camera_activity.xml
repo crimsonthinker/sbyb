@@ -89,6 +89,23 @@
         android:paddingRight="10dp"
         />
 
+
+    <ImageView
+        android:id="@+id/viewImageVideoThumbnail"
+        android:layout_width="77dp"
+        android:layout_height="77dp"
+        android:background="@null"
+        android:contentDescription="@android:string/untitled"
+        android:onClick="onClick"
+        android:paddingRight="10dp"
+        android:paddingBottom="10dp"
+        android:src="@android:drawable/gallery_thumb"
+        android:scaleType="fitCenter"
+        app:layout_constraintBottom_toTopOf="@id/gallery_preview"
+        app:layout_constraintRight_toRightOf="parent"
+        />
+
+
     <Switch
         android:id="@+id/mode_switcher"
         android:track="@drawable/switch_track"
