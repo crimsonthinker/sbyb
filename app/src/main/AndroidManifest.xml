@@ -41,7 +41,8 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".CameraActivity">
+            android:name=".CameraActivity"
+            android:screenOrientation="portrait">
         </activity>
         <activity
             android:name=".EditImageActivity">
@@ -54,7 +55,8 @@
             android:configChanges="orientation|screenSize"/>
         <activity android:name=".VideoActivity"
             android:configChanges="orientation|screenSize"/>
-		<activity android:name=".ScreenSlidePagerActivity"></activity>
+		<activity android:name=".ScreenSlidePagerActivity"
+            android:configChanges="orientation|screenSize"></activity>
     </application>
 
 </manifest>
