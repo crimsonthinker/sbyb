@@ -63,7 +63,6 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 
@@ -282,7 +281,6 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
         if (mCamera != null){
             mCamera.setPreviewCallback(previewFaceDetection);
         }else{
-            Toast.makeText(getApplicationContext(),"Camera is null",Toast.LENGTH_SHORT).show();
             mCamera.release();
             mCamera = null;
         }
@@ -309,7 +307,6 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
         try {
             mCamera.setPreviewDisplay(mPreview.getHolder());
         }catch(Exception e){
-            Toast.makeText(getApplicationContext(),"Camera preview not set",Toast.LENGTH_SHORT).show();
         }
         mCamera.startPreview();
         mCamera.unlock();
@@ -327,9 +324,7 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
             mMediaRecorder.prepare();
         } catch (Exception e) {
             releaseMediaRecorder();
-            Toast.makeText(getApplicationContext(),"Media recorder not started",Toast.LENGTH_SHORT).show();
         }
-        Toast.makeText(getApplicationContext(),"OK",Toast.LENGTH_SHORT).show();
 
     }
     private void releaseCamera(){
@@ -354,7 +349,6 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
         ContentValues values = new ContentValues(3);
         File videoFile = new File(currentVideoFilePath);
         if(videoFile.exists()){
-            Toast.makeText(getApplicationContext(),"Exist",Toast.LENGTH_SHORT).show();
         }else{
 
         }
@@ -416,13 +410,11 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
     Boolean isFileExist(){
         if (dir == null) {
             //TODO: Popup a window display "no files" message
-            Toast.makeText(this, "No files", Toast.LENGTH_LONG).show();
             return false;
         }
         files = dir.listFiles();
         if (files == null || files.length == 0){
             //TODO: Popup a window display "no files" message
-            Toast.makeText(this, "No files", Toast.LENGTH_LONG).show();
             return false;
         }
         return true;
@@ -595,22 +587,16 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
                 break;
             case R.id.camera_button:
                 if(camMode == PHOTO_MODE) {
-                    Toast.makeText(getApplicationContext() , String.valueOf(mPreview.getCameraDegree()), Toast.LENGTH_SHORT).show();
-                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_NOSENSOR);
                     mCamera.takePicture(null, null, this);
-                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR);
                     //Begin blinking thread
                 }else{
                     if(recordMode == STOP_RECORDING) {
                         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_NOSENSOR);
-                        Toast.makeText(getApplicationContext(), "Record mode", Toast.LENGTH_SHORT).show();
                         recordSetUp();
                         mMediaRecorder.start();
-                        Toast.makeText(getApplicationContext(),String.valueOf(mPreview.getCameraDegree()),Toast.LENGTH_SHORT).show();
                         recordMode = START_RECORDING;
                         //TODO: start animation thread here
                     }else{
-                        Toast.makeText(getApplicationContext(), "Stop recording", Toast.LENGTH_SHORT).show();
                         Boolean isSavable = true;
 //                        cameraButton.setImageResource(R.drawable.record_button);
                         try {
@@ -649,12 +635,6 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
                 Camera.Parameters camParams = mCamera.getParameters();
                 List<Camera.Size> sizes = camParams.getSupportedPictureSizes();
                 List<Camera.Size> camSizes = camParams.getSupportedPreviewSizes();
-                for(int i = 0 ; i < sizes.size(); i++){
-                    Toast.makeText(getApplicationContext(),"Picture size: " + sizes.get(i).width + " " + sizes.get(i).height,Toast.LENGTH_SHORT).show();
-                }
-                for(int i = 0 ; i < camSizes.size(); i++){
-                    Toast.makeText(getApplicationContext(),"Camera size: " + camSizes.get(i).width + " " + camSizes.get(i).height,Toast.LENGTH_SHORT).show();
-                }
                 break;
             case R.id.gallery_preview:
                 Intent intent = new Intent(CameraActivity.this, Gallery.class);
@@ -734,7 +714,6 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
                 cameraSetUp();
             } else {
                 //TODO: Add warning dialog
-                Toast.makeText(getApplicationContext(), "permission is not fully granted", Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -914,7 +893,6 @@ class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
                 handleZoom(event,params);
             }
         }else if(action == MotionEvent.ACTION_UP){
-            Toast.makeText(getContext(),"Hello",Toast.LENGTH_SHORT).show();
             handleFocus(event,params);
         }
         return true;
