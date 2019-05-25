@@ -27,7 +27,7 @@ import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-
+import java.util.concurrent.ExecutionException;
 
 
 public class Gallery extends AppCompatActivity {
@@ -36,17 +36,19 @@ public class Gallery extends AppCompatActivity {
     LoadAlbumImages loadAlbumTask;
 
 
+    private int count = 0;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_gallery);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar_photo);
+        Toolbar toolbar = findViewById(R.id.toolbar_photo);
         setSupportActionBar(toolbar);
 
         getSupportActionBar().setTitle("SBYB");
 
-        galleryGridView = (GridView) findViewById(R.id.galleryGridView);
+        galleryGridView = findViewById(R.id.galleryGridView);
         int iDisplayWidth = getResources().getDisplayMetrics().widthPixels ;
         Resources resources = getApplicationContext().getResources();
         DisplayMetrics metrics = resources.getDisplayMetrics();
@@ -61,12 +63,40 @@ public class Gallery extends AppCompatActivity {
 
 
         loadAlbumTask = new LoadAlbumImages();
-        loadAlbumTask.execute();
+        try {
+            loadAlbumTask.execute().get();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
 
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
 
+        ++count;
+
+        if (count > 2) {
+            loadAlbumTask = new LoadAlbumImages();
+            try {
+                loadAlbumTask.execute().get();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        ++count;
+    }
 
     class LoadAlbumImages extends AsyncTask<String, Void, String> {
         @Override
@@ -170,13 +200,13 @@ class SingleAlbumAdapter extends BaseAdapter {
                 convertView = LayoutInflater.from(activity).inflate(
                         R.layout.photo_adapter, parent, false);
 
-                holder.galleryImage = (ImageView) convertView.findViewById(R.id.galleryImage);
+                holder.galleryImage = convertView.findViewById(R.id.galleryImage);
 
                 convertView.setTag(holder);
             }else{
                 holder = new SingleAlbumViewHolder();
                 convertView = LayoutInflater.from(activity).inflate(R.layout.video_adapter,parent,false);
-                holder.galleryImage = (ImageView) convertView.findViewById(R.id.iv_image);
+                holder.galleryImage = convertView.findViewById(R.id.iv_image);
                 convertView.setTag(holder);
             }
         } else {

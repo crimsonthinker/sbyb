@@ -5,6 +5,7 @@ import android.annotation.SuppressLint;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
@@ -32,10 +33,12 @@ import com.sbyb.photoeditor.base.BaseActivity;
 import com.sbyb.photoeditor.filters.FilterListener;
 import com.sbyb.photoeditor.filters.FilterViewAdapter;
 import com.sbyb.photoeditor.tools.EditingToolsAdapter;
-import com.sbyb.photoeditor.tools.*;
+import com.sbyb.photoeditor.tools.ToolType;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import ja.burhanrashid52.photoeditor.OnPhotoEditorListener;
 import ja.burhanrashid52.photoeditor.PhotoEditor;
@@ -115,14 +118,16 @@ public class EditImageActivity extends BaseActivity implements OnPhotoEditorList
         try {
             mPhotoEditor.clearAllViews();
             filepath = data.getString("filepath");
-            Uri uri = Uri.parse(filepath);
-            Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
+//            Uri uri = Uri.parse(filepath);
+//            Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
+            Bitmap bitmap = BitmapFactory.decodeFile(filepath);
             mPhotoEditorView.getSource().setImageBitmap(bitmap);
-        } catch (IOException e) {
-            e.printStackTrace();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
         }
         catch (NullPointerException e) {
-
+            e.printStackTrace();
         }
 
     }
@@ -238,9 +243,10 @@ public class EditImageActivity extends BaseActivity implements OnPhotoEditorList
     private void saveImage() {
         if (requestPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
             showLoading("Saving...");
+            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
             File file = new File(GALLERY_DIR
-                    + File.separator +
-                    + System.currentTimeMillis() + ".png");
+                    + File.separator
+                    + timeStamp + ".png");
 
             try {
                 file.createNewFile();

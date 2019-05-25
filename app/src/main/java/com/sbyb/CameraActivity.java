@@ -1,17 +1,5 @@
 package com.sbyb;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-
 import android.Manifest;
 import android.content.ContentValues;
 import android.content.Context;
@@ -23,7 +11,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
@@ -31,20 +18,20 @@ import android.graphics.Point;
 import android.graphics.PorterDuff;
 import android.graphics.YuvImage;
 import android.hardware.Camera;
-import android.hardware.Camera.PreviewCallback;
 import android.hardware.Camera.PictureCallback;
+import android.hardware.Camera.PreviewCallback;
 import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.constraint.ConstraintLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.util.Pair;
 import android.view.Display;
@@ -63,6 +50,7 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 
@@ -77,7 +65,19 @@ import org.opencv.core.Rect;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
-import org.w3c.dom.Text;
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 import static android.content.ContentValues.TAG;
 import static android.content.Context.WINDOW_SERVICE;
@@ -167,6 +167,8 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
     /* Files */
     File dir = new File(GALLERY_DIR);
     File[] files;
+    Boolean doesFileExist = false;
+    Boolean shouldCheckForFileExistence = false;
 
     /**********************************************************************************************/
 
@@ -229,25 +231,20 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
         display.getRealSize(size);
         return new Pair<>(size.x, size.y);
     }
-    private void switchCamera() {
-        Canvas canvas = mHolderTransparent.lockCanvas(null);
-        canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
-        mHolderTransparent.unlockCanvasAndPost(canvas);
-        if (camId == Camera.CameraInfo.CAMERA_FACING_BACK) { ;
-            flashLight.setVisibility(View.GONE);
-            camId = Camera.CameraInfo.CAMERA_FACING_FRONT;
-        }
-        else {
-            flashLight.setVisibility(View.VISIBLE);
-            camId = Camera.CameraInfo.CAMERA_FACING_BACK;
-        }
-        if(flashLightState == ON) {
-            flashLightState = OFF;
-            flashLight.setImageResource(R.mipmap.flashlight_off);
-        }
-        releaseMediaRecorder();
-        releaseCamera();
-        cameraSetUp();
+
+    public static void showFileExistenceNoti(Context context) {
+        AlertDialog diaBox = new AlertDialog.Builder(context)
+                .setTitle("SBYB has something to tell you ^_<")
+                .setMessage("Look like you haven't take any picture yet!! Let's take your "
+                        + "first picture with SBYB ^_^")
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                })
+                .create();
+        diaBox.show();
     }
     private void switchMode(boolean val) {
         cameraButton.startAnimation(fadeOut);
@@ -345,28 +342,25 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
         }
     }
 
-    private void saveVideo() {
-        ContentValues values = new ContentValues(3);
-        File videoFile = new File(currentVideoFilePath);
-        if(videoFile.exists()){
-        }else{
-
+    private void switchCamera() {
+        Canvas canvas = mHolderTransparent.lockCanvas(null);
+        canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
+        mHolderTransparent.unlockCanvasAndPost(canvas);
+        if (camId == Camera.CameraInfo.CAMERA_FACING_BACK) {
+            flashLight.setVisibility(View.GONE);
+            camId = Camera.CameraInfo.CAMERA_FACING_FRONT;
         }
-        values.put(MediaStore.Video.Media.TITLE,currentVideoFileName);
-        values.put(MediaStore.Video.Media.MIME_TYPE,"video/3gp");
-        values.put(MediaStore.Video.Media.DATA,videoFile.getAbsolutePath());
-        Uri savedVideo = getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI,values);
-        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-        mediaScanIntent.setData(savedVideo);
-        this.sendBroadcast(mediaScanIntent);
-
-        /* thumbnail */
-        Glide.with(this)
-                .asBitmap()
-                .load( Uri.fromFile(videoFile) )
-                .fitCenter()
-                .circleCrop()
-                .into(thumbnailView);
+        else {
+            flashLight.setVisibility(View.VISIBLE);
+            camId = Camera.CameraInfo.CAMERA_FACING_BACK;
+        }
+        if(flashLightState == ON) {
+            flashLightState = OFF;
+            flashLight.setImageResource(R.mipmap.flashlight_off);
+        }
+        releaseMediaRecorder();
+        releaseCamera();
+        cameraSetUp();
     }
 
     int getRecordOrientation() {
@@ -406,18 +400,98 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
         return 0f;
     }
 
+    private void saveVideo() {
+        ContentValues values = new ContentValues(3);
+        File videoFile = new File(currentVideoFilePath);
+        if(videoFile.exists()){
+        }else{
 
-    Boolean isFileExist(){
+        }
+        values.put(MediaStore.Video.Media.TITLE,currentVideoFileName);
+        values.put(MediaStore.Video.Media.MIME_TYPE,"video/3gp");
+        values.put(MediaStore.Video.Media.DATA,videoFile.getAbsolutePath());
+        Uri savedVideo = getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI,values);
+        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+        mediaScanIntent.setData(savedVideo);
+        this.sendBroadcast(mediaScanIntent);
+
+        /* thumbnail */
+        Glide.with(this)
+                .asBitmap()
+                .load( Uri.fromFile(videoFile) )
+                .fitCenter()
+                .circleCrop()
+                .into(thumbnailView);
+        try {
+            doesFileExist = new ShowThumbnailTask(this).execute().get();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Check for file existence
+    Boolean doesFileExist() {
         if (dir == null) {
             //TODO: Popup a window display "no files" message
             return false;
         }
         files = dir.listFiles();
+
         if (files == null || files.length == 0){
             //TODO: Popup a window display "no files" message
             return false;
         }
+        Arrays.sort(files, new Comparator<File>() {
+            @Override
+            public int compare(File object1, File object2) {
+//                return object2.getName().compareTo(object1.getName());
+                long r = object2.lastModified() - object1.lastModified();
+                return ( r > 0 ) ? 1 : ( (r < 0) ? -1 : 0 );
+            }
+        });
         return true;
+    }
+
+    void showThumbnailView() {
+//        AsyncTask<Void, Void, Boolean> showThumbnailView = new ShowThumbnailTask().execute();
+        try {
+            doesFileExist = new ShowThumbnailTask(this).execute().get();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        if ( doesFileExist ) {
+            if ( ScreenSlidePagerActivity.isImageFile( files[0].getAbsolutePath() ) ) {//files.length - 1
+                    /*Bitmap thumbImage = ThumbnailUtils.extractThumbnail(
+                            BitmapFactory.decodeFile(files[files.length - 1].getAbsolutePath())
+                            , 200
+                            , 200);
+                    thumbnailView.setImageBitmap(thumbImage);*/
+                Glide.with(this)
+                        .load( files[0] )
+                        //files.length - 1
+                        .fitCenter()
+                        .circleCrop()
+                        .into(thumbnailView);
+            }
+            else //if ( ScreenSlidePagerActivity.isVideoFile( files[files.length - 1].getAbsolutePath() ) )
+            {
+                Glide.with(this)
+                        .asBitmap()
+                        .load( Uri.fromFile(files[0]) )
+                        //files.length - 1
+                        .thumbnail()
+                        .circleCrop()
+                        .into(thumbnailView);
+            }
+        }
+        else {
+            thumbnailView.setImageResource(android.R.drawable.gallery_thumb);
+        }
+
     }
 
     /**********************************************************************************************/
@@ -508,29 +582,6 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
         /* Thumbnail */
         thumbnailView = findViewById(R.id.viewImageVideoThumbnail);
 
-        if ( isFileExist() ) {
-            if (ScreenSlidePagerActivity.isImageFile( files[files.length - 1].getAbsolutePath() ) ) {
-                /*Bitmap thumbImage = ThumbnailUtils.extractThumbnail(
-                        BitmapFactory.decodeFile(files[files.length - 1].getAbsolutePath())
-                        , 200
-                        , 200);
-                thumbnailView.setImageBitmap(thumbImage);*/
-                Glide.with(this)
-                        .load( files[files.length - 1] )
-                        .fitCenter()
-                        .circleCrop()
-                        .into(thumbnailView);
-            }
-            else //if ( ScreenSlidePagerActivity.isVideoFile( files[files.length - 1].getAbsolutePath() ) )
-            {
-                Glide.with(this)
-                        .asBitmap()
-                        .load( Uri.fromFile(files[files.length - 1]) )
-                        .thumbnail()
-                        .circleCrop()
-                        .into(thumbnailView);
-            }
-        }
     }
 
     @Override
@@ -543,6 +594,7 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
     protected void onRestart() {
         super.onRestart();
         cameraSetUp();
+
     }
 
     @Override
@@ -555,11 +607,16 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
             Log.d(TAG, "OpenCV library found inside package. Using it!");
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
         }
+
+        if (shouldCheckForFileExistence) showThumbnailView();
     }
 
     @Override
     public void onPause(){
         super.onPause();
+
+        // check file existence
+        shouldCheckForFileExistence = true;
     }
 
     @Override
@@ -642,7 +699,10 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
                 break;
             case R.id.viewImageVideoThumbnail:
 //                TODO: Start ScreenSlidePagerActivity
-                if ( !isFileExist() ) break;
+                if ( !doesFileExist ) {
+                    showFileExistenceNoti(this);
+                    break;
+                }
 
                 Intent viewImageVideoIntent = new Intent(this
                         , ScreenSlidePagerActivity.class);
@@ -701,6 +761,14 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
                     .fitCenter()
                     .circleCrop()
                     .into(thumbnailView);
+
+            try {
+                doesFileExist = new ShowThumbnailTask(this).execute().get();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
 
 
@@ -715,6 +783,41 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
             } else {
                 //TODO: Add warning dialog
             }
+        }
+    }
+
+
+    /********************** Helper internal class *************************************************/
+    private class ShowThumbnailTask extends AsyncTask<Void, Void, Boolean> {
+
+        Context context;
+
+        public ShowThumbnailTask(Context context){
+            this.context = context;
+        }
+
+        /*@Override
+        protected void onPreExecute() {
+//            super.onPreExecute();
+        }*/
+
+        @Override
+        protected void onPostExecute(Boolean doesFileExist) {
+//            super.onPostExecute(aVoid);
+            if (!doesFileExist)
+            {
+                showFileExistenceNoti(context);
+            }
+        }
+
+        /*@Override
+        protected void onProgressUpdate(Void... values) {
+//            super.onProgressUpdate(values);
+        }*/
+
+        @Override
+        protected Boolean doInBackground(Void... avoid) {
+            return doesFileExist();
         }
     }
 }
@@ -733,21 +836,18 @@ class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
     /**********************************************************************************************/
 
     //CONSTRUCTOR
-    /**********************************************************************************************/
-    public CameraPreview(Context context, Camera camera) {
-        super(context);
-        mContext = context;
-        mCamera = camera;
-        // Install a SurfaceHolder.Callback so we get notified when th
-        // underlying surface is created and destroyed.
-        mHolder = getHolder();
-        mHolder.addCallback(this);
-        // deprecated setting, but required on Android versions prior to 3.0
-        mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-        cameraOrientation = Surface.ROTATION_90;
-        zoomValue = ((AppCompatActivity) mContext).findViewById(R.id.zoom_info);
-        zoomValue.setVisibility(View.INVISIBLE);
-    }
+    private Camera.AutoFocusCallback mAutoFocusTakePictureCallback = new Camera.AutoFocusCallback() {
+        @Override
+        public void onAutoFocus(boolean success, Camera camera) {
+            if (success) {
+                // do something...
+                Log.i("tap_to_focus","success!");
+            } else {
+                // do something...
+                Log.i("tap_to_focus","fail!");
+            }
+        }
+    };
     /**********************************************************************************************/
 
     //FUNCTION
@@ -897,5 +997,106 @@ class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
         }
         return true;
     }
+
+    /**********************************************************************************************/
+    public CameraPreview(Context context, Camera camera) {
+        super(context);
+        mContext = context;
+        mCamera = camera;
+        // Install a SurfaceHolder.Callback so we get notified when th
+        // underlying surface is created and destroyed.
+        mHolder = getHolder();
+        mHolder.addCallback(this);
+        // deprecated setting, but required on Android versions prior to 3.0
+        mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+        cameraOrientation = Surface.ROTATION_90;
+        zoomValue = ((AppCompatActivity) mContext).findViewById(R.id.zoom_info);
+        zoomValue.setVisibility(View.INVISIBLE);
+
+        // Focus
+        setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (mCamera != null) {
+                    Camera camera = mCamera;
+                    camera.cancelAutoFocus();
+                    android.graphics.Rect focusRect = new android.graphics.Rect(
+                            (int)(event.getX() - 1000),
+                            (int)(event.getY() - 1000),
+                            (int)(event.getX() + 1000),
+                            (int)(event.getY() + 1000));
+
+                    Camera.Parameters parameters = camera.getParameters();
+                    if (parameters.getFocusMode().equals(
+                            Camera.Parameters.FOCUS_MODE_AUTO) ){
+                        parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
+                    }
+
+                    if (parameters.getMaxNumFocusAreas() > 0) {
+                        List<Camera.Area> mylist = new ArrayList<Camera.Area>();
+                        mylist.add(new Camera.Area(focusRect, 1000));
+                        parameters.setFocusAreas(mylist);
+                    }
+
+                    try {
+                        camera.cancelAutoFocus();
+                        camera.setParameters(parameters);
+                        camera.startPreview();
+                        camera.autoFocus(new Camera.AutoFocusCallback() {
+                            @Override
+                            public void onAutoFocus(boolean success, Camera camera) {
+                                if (!camera.getParameters().getFocusMode().equals(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)) {
+                                    Camera.Parameters parameters = camera.getParameters();
+                                    parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
+                                    if (parameters.getMaxNumFocusAreas() > 0) {
+                                        parameters.setFocusAreas(null);
+                                    }
+                                    camera.setParameters(parameters);
+                                    camera.startPreview();
+                                }
+                            }
+                        });
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+                return true;
+            }
+        });
+
+        setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    focusOnTouch(event);
+                }
+                return true;
+            }
+        });
+    }
+
+    private void focusOnTouch(MotionEvent event) {
+        if (mCamera != null ) {
+
+            Camera.Parameters parameters = mCamera.getParameters();
+            if (parameters.getMaxNumMeteringAreas() > 0){
+                Log.i(TAG,"fancy !");
+                android.graphics.Rect rect = calculateFocusArea(event.getX(), event.getY());
+
+                parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
+                List<Camera.Area> meteringAreas = new ArrayList<Camera.Area>();
+                meteringAreas.add(new Camera.Area(rect, 800));
+                parameters.setFocusAreas(meteringAreas);
+
+                mCamera.setParameters(parameters);
+                mCamera.autoFocus(mAutoFocusTakePictureCallback);
+                Toast.makeText(getContext(), "FOCUS", Toast.LENGTH_SHORT).show();
+            }else {
+                mCamera.autoFocus(mAutoFocusTakePictureCallback);
+            }
+        }
+    }
 }
+
+
 /**********************************************************************************************/
