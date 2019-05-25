@@ -50,6 +50,7 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 
@@ -835,21 +836,18 @@ class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
     /**********************************************************************************************/
 
     //CONSTRUCTOR
-    /**********************************************************************************************/
-    public CameraPreview(Context context, Camera camera) {
-        super(context);
-        mContext = context;
-        mCamera = camera;
-        // Install a SurfaceHolder.Callback so we get notified when th
-        // underlying surface is created and destroyed.
-        mHolder = getHolder();
-        mHolder.addCallback(this);
-        // deprecated setting, but required on Android versions prior to 3.0
-        mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-        cameraOrientation = Surface.ROTATION_90;
-        zoomValue = ((AppCompatActivity) mContext).findViewById(R.id.zoom_info);
-        zoomValue.setVisibility(View.INVISIBLE);
-    }
+    private Camera.AutoFocusCallback mAutoFocusTakePictureCallback = new Camera.AutoFocusCallback() {
+        @Override
+        public void onAutoFocus(boolean success, Camera camera) {
+            if (success) {
+                // do something...
+                Log.i("tap_to_focus","success!");
+            } else {
+                // do something...
+                Log.i("tap_to_focus","fail!");
+            }
+        }
+    };
     /**********************************************************************************************/
 
     //FUNCTION
@@ -998,6 +996,105 @@ class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
             handleFocus(event,params);
         }
         return true;
+    }
+
+    /**********************************************************************************************/
+    public CameraPreview(Context context, Camera camera) {
+        super(context);
+        mContext = context;
+        mCamera = camera;
+        // Install a SurfaceHolder.Callback so we get notified when th
+        // underlying surface is created and destroyed.
+        mHolder = getHolder();
+        mHolder.addCallback(this);
+        // deprecated setting, but required on Android versions prior to 3.0
+        mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+        cameraOrientation = Surface.ROTATION_90;
+        zoomValue = ((AppCompatActivity) mContext).findViewById(R.id.zoom_info);
+        zoomValue.setVisibility(View.INVISIBLE);
+
+        // Focus
+        setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (mCamera != null) {
+                    Camera camera = mCamera;
+                    camera.cancelAutoFocus();
+                    android.graphics.Rect focusRect = new android.graphics.Rect(
+                            (int)(event.getX() - 1000),
+                            (int)(event.getY() - 1000),
+                            (int)(event.getX() + 1000),
+                            (int)(event.getY() + 1000));
+
+                    Camera.Parameters parameters = camera.getParameters();
+                    if (parameters.getFocusMode().equals(
+                            Camera.Parameters.FOCUS_MODE_AUTO) ){
+                        parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
+                    }
+
+                    if (parameters.getMaxNumFocusAreas() > 0) {
+                        List<Camera.Area> mylist = new ArrayList<Camera.Area>();
+                        mylist.add(new Camera.Area(focusRect, 1000));
+                        parameters.setFocusAreas(mylist);
+                    }
+
+                    try {
+                        camera.cancelAutoFocus();
+                        camera.setParameters(parameters);
+                        camera.startPreview();
+                        camera.autoFocus(new Camera.AutoFocusCallback() {
+                            @Override
+                            public void onAutoFocus(boolean success, Camera camera) {
+                                if (!camera.getParameters().getFocusMode().equals(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)) {
+                                    Camera.Parameters parameters = camera.getParameters();
+                                    parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
+                                    if (parameters.getMaxNumFocusAreas() > 0) {
+                                        parameters.setFocusAreas(null);
+                                    }
+                                    camera.setParameters(parameters);
+                                    camera.startPreview();
+                                }
+                            }
+                        });
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+                return true;
+            }
+        });
+
+        setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    focusOnTouch(event);
+                }
+                return true;
+            }
+        });
+    }
+
+    private void focusOnTouch(MotionEvent event) {
+        if (mCamera != null ) {
+
+            Camera.Parameters parameters = mCamera.getParameters();
+            if (parameters.getMaxNumMeteringAreas() > 0){
+                Log.i(TAG,"fancy !");
+                android.graphics.Rect rect = calculateFocusArea(event.getX(), event.getY());
+
+                parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
+                List<Camera.Area> meteringAreas = new ArrayList<Camera.Area>();
+                meteringAreas.add(new Camera.Area(rect, 800));
+                parameters.setFocusAreas(meteringAreas);
+
+                mCamera.setParameters(parameters);
+                mCamera.autoFocus(mAutoFocusTakePictureCallback);
+                Toast.makeText(getContext(), "FOCUS", Toast.LENGTH_SHORT).show();
+            }else {
+                mCamera.autoFocus(mAutoFocusTakePictureCallback);
+            }
+        }
     }
 }
 
