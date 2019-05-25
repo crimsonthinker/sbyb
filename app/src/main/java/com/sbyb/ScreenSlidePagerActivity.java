@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.BottomNavigationView;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.widget.ActionMenuView;
@@ -58,7 +59,7 @@ public class ScreenSlidePagerActivity extends Activity {
 
     ScreenSlidePagerActivity ourActivity;
 
-    String currentViewDir = "";
+    String currentViewFile = "";
 
     // Slider
 //    private SliderLayout mDemoSlider;
@@ -68,7 +69,7 @@ public class ScreenSlidePagerActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_screen_slide);
-        nav = findViewById(R.id.nav_view);
+//        nav = findViewById(R.id.nav_view);
         if (savedInstanceState == null)
         {
             if ( !refreshDir() )
@@ -100,7 +101,31 @@ public class ScreenSlidePagerActivity extends Activity {
         // Get the Intent that started this activity and extract the string
         Intent intent = getIntent();
         currIdx = intent.getIntExtra("POSITION", 0);
+
+        // Bottom Navigation Bar
         nav = findViewById(R.id.nav_view);
+        nav.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
+            @Override
+            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+                switch (item.getItemId()) {
+                    case R.id.navigation_edit:
+                        // On Edit button
+                        Intent editIntent = new Intent(ourActivity, EditImageActivity.class);
+                        editIntent.putExtra("filepath", currentViewFile );
+                        startActivity(editIntent);
+                        return true;
+                    case R.id.navigation_delete:
+                        // On Delete button
+                        return true;
+                    case R.id.navigation_gallery:
+                        // On Gallery button
+                        Intent galleryIntent = new Intent(ourActivity , Gallery.class);
+                        startActivity(galleryIntent);
+                        return true;
+                }
+                return false;
+            }
+        });
 
     }
 
@@ -269,7 +294,7 @@ public class ScreenSlidePagerActivity extends Activity {
         private Boolean viewImage(int position){
             try
             {
-                currentViewDir = files[position].getAbsolutePath();
+                currentViewFile = files[position].getAbsolutePath();
                 Glide.with(context)
                         .load(files[position])
                         .fitCenter()
@@ -298,9 +323,11 @@ public class ScreenSlidePagerActivity extends Activity {
         private Boolean viewVideo(int position){
             try
             {
+                currentViewFile = files[position].getAbsolutePath();
                 Glide.with(context)
                         .asBitmap()
                         .load(Uri.fromFile( files[position] ) )
+                        .placeholder(R.drawable.ic_gallery)
                         .fitCenter()
                         .diskCacheStrategy(DiskCacheStrategy.ALL)
                         .listener(new RequestListener<Bitmap>() {
@@ -327,8 +354,8 @@ public class ScreenSlidePagerActivity extends Activity {
         public void previewVideo(Context context, File file, final VideoView videoView, final ImageView imageView) {
             videoView.setVideoPath(file.getAbsolutePath());
 
-            MediaController mediaController = new MediaController(context);
-            mediaController.setAnchorView(mc);
+            final MediaController mediaController = new MediaController(context);
+//            mediaController.setAnchorView(mc);
 
             videoView.setMediaController(mediaController);
 
@@ -338,7 +365,14 @@ public class ScreenSlidePagerActivity extends Activity {
             videoView.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
                 @Override
                 public void onPrepared(MediaPlayer mp) {
-                    imageView.setVisibility(View.INVISIBLE);
+//                    imageView.setVisibility(View.INVISIBLE);
+                    /*mp.setOnVideoSizeChangedListener(new MediaPlayer.OnVideoSizeChangedListener() {
+                        @Override
+                        public void onVideoSizeChanged(MediaPlayer mp, int width, int height) {
+
+                        }
+                    });*/
+                    mediaController.setAnchorView(videoView);
                     mp.setVolume(0f, 0f);
                     mp.setLooping(true);
                 }
@@ -347,6 +381,7 @@ public class ScreenSlidePagerActivity extends Activity {
 
             videoView.start();
             videoView.requestFocus();
+            imageView.setVisibility(View.INVISIBLE);
 
         /*try {
             Uri myUri = Uri.fromFile(file); // initialize Uri here
@@ -395,7 +430,7 @@ public class ScreenSlidePagerActivity extends Activity {
             videoView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    if (aboveMenuView.getVisibility() == View.INVISIBLE)
+                    /*if (aboveMenuView.getVisibility() == View.INVISIBLE)
                     {
                         aboveMenuView.setVisibility(View.VISIBLE);
                         bellowMenuView.setVisibility(View.VISIBLE);
@@ -404,14 +439,21 @@ public class ScreenSlidePagerActivity extends Activity {
                     else if (aboveMenuView.getVisibility() == View.VISIBLE){
                         aboveMenuView.setVisibility(View.INVISIBLE);
                         bellowMenuView.setVisibility(View.INVISIBLE);
+                    }*/
+                    if (nav.getVisibility() == View.INVISIBLE)
+                    {
+                        nav.setVisibility(View.VISIBLE);
+                    }
+                    else if (nav.getVisibility() == View.VISIBLE){
+                        nav.setVisibility(View.INVISIBLE);
                     }
 
                 }
             });
 
-            mc = v.findViewById(R.id.mcView);
+//            mc = v.findViewById(R.id.mcView);
 
-            if (ScreenSlidePagerActivity.isImageFile( files[position].getAbsolutePath() ) )
+            if ( ScreenSlidePagerActivity.isImageFile( files[position].getAbsolutePath() ) )
             {
                 videoView.setVisibility(View.GONE);
 //            imageView.setVisibility(View.VISIBLE);
@@ -466,7 +508,8 @@ public class ScreenSlidePagerActivity extends Activity {
         }
     }
 
-    private android.support.design.widget.BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
+
+    /*private android.support.design.widget.BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
             = new android.support.design.widget.BottomNavigationView.OnNavigationItemSelectedListener() {
 
         @Override
@@ -474,16 +517,20 @@ public class ScreenSlidePagerActivity extends Activity {
             switch (item.getItemId()) {
                 case R.id.navigation_edit:
                     // On Edit button
+                    Intent editIntent = new Intent(ourActivity, EditImageActivity.class);
+                    editIntent.putExtra("filepath", files[currIdx].getAbsolutePath() );
                     return true;
                 case R.id.navigation_delete:
                     // On Delete button
                     return true;
                 case R.id.navigation_gallery:
                     // On Gallery button
+                    Intent galleryIntent = new Intent(ourActivity , Gallery.class);
+                    startActivity(galleryIntent);
                     return true;
             }
             return false;
         }
-    };
+    };*/
 }
 

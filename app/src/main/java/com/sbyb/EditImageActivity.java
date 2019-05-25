@@ -5,6 +5,7 @@ import android.annotation.SuppressLint;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
@@ -23,6 +24,7 @@ import android.view.View;
 import android.view.animation.AnticipateOvershootInterpolator;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.sbyb.photoeditor.EmojiBSFragment;
 import com.sbyb.photoeditor.PropertiesBSFragment;
@@ -32,7 +34,7 @@ import com.sbyb.photoeditor.base.BaseActivity;
 import com.sbyb.photoeditor.filters.FilterListener;
 import com.sbyb.photoeditor.filters.FilterViewAdapter;
 import com.sbyb.photoeditor.tools.EditingToolsAdapter;
-import com.sbyb.photoeditor.tools.*;
+import com.sbyb.photoeditor.tools.ToolType;
 
 import java.io.File;
 import java.io.IOException;
@@ -115,12 +117,14 @@ public class EditImageActivity extends BaseActivity implements OnPhotoEditorList
         try {
             mPhotoEditor.clearAllViews();
             filepath = data.getString("filepath");
+            Toast.makeText(this, filepath, Toast.LENGTH_LONG).show();
             Uri uri = Uri.parse(filepath);
-            Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
+            //Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
+            Bitmap bitmap = BitmapFactory.decodeFile(filepath);
             mPhotoEditorView.getSource().setImageBitmap(bitmap);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        } //catch (IOException e) {
+            //e.printStackTrace();
+        //}
         catch (NullPointerException e) {
 
         }
