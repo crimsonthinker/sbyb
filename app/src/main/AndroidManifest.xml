@@ -54,7 +54,8 @@
             android:configChanges="orientation|screenSize"/>
         <activity android:name=".VideoActivity"
             android:configChanges="orientation|screenSize"/>
-		<activity android:name=".ScreenSlidePagerActivity"></activity>
+		<activity android:name=".ScreenSlidePagerActivity"
+            android:configChanges="orientation|screenSize"></activity>
     </application>
 
 </manifest>
