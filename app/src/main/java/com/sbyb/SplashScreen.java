@@ -8,7 +8,7 @@ import android.os.Bundle;
 import android.view.View;
 
 public class SplashScreen extends AppCompatActivity {
-    private final int SPLASH_DISPLAY_LENGTH = 2000; //2 seconds
+    private final int SPLASH_DISPLAY_LENGTH = 1000; //2 seconds
     private final int CAMERA_CODE = 1000;
     @Override
     protected void onCreate(Bundle savedInstanceState) {

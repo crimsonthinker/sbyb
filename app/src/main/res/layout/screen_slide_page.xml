@@ -4,28 +4,33 @@
     android:layout_height="match_parent"
     android:id="@+id/content">
 
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <VideoView
+            android:id="@+id/videoView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:alpha="0"
+            />
+        <!--android:background="@drawable/play"-->
+        <!--<MediaController
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@null"
+            android:id="@+id/mcView"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"/>-->
+    </FrameLayout>
+
     <ImageView
         android:id = "@+id/imageView"
         android:layout_width = "match_parent"
-        android:layout_height = "match_parent" />
-
-    <!--<MediaController
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:background="@null"
-        android:id="@+id/mcView"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toTopOf="@id/videoView"
-        app:layout_constraintBottom_toBottomOf="@id/videoView"
-        android:visibility="visible"/>-->
-
-
-    <VideoView
-        android:id="@+id/videoView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-
+        android:layout_height = "match_parent"
+        />
 
 
 </android.support.constraint.ConstraintLayout>

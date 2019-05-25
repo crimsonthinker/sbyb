@@ -1,5 +1,17 @@
 package com.sbyb;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+
 import android.Manifest;
 import android.content.ContentValues;
 import android.content.Context;
@@ -11,6 +23,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
@@ -18,19 +31,20 @@ import android.graphics.Point;
 import android.graphics.PorterDuff;
 import android.graphics.YuvImage;
 import android.hardware.Camera;
-import android.hardware.Camera.PictureCallback;
 import android.hardware.Camera.PreviewCallback;
+import android.hardware.Camera.PictureCallback;
 import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
 import android.net.Uri;
-import android.os.Bundle;
+import android.os.AsyncTask;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.constraint.ConstraintLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.util.Pair;
 import android.view.Display;
@@ -63,17 +77,7 @@ import org.opencv.core.Rect;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
-
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
+import org.w3c.dom.Text;
 
 import static android.content.ContentValues.TAG;
 import static android.content.Context.WINDOW_SERVICE;
@@ -229,7 +233,7 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
         Canvas canvas = mHolderTransparent.lockCanvas(null);
         canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
         mHolderTransparent.unlockCanvasAndPost(canvas);
-        if (camId == Camera.CameraInfo.CAMERA_FACING_BACK) {
+        if (camId == Camera.CameraInfo.CAMERA_FACING_BACK) { ;
             flashLight.setVisibility(View.GONE);
             camId = Camera.CameraInfo.CAMERA_FACING_FRONT;
         }
@@ -633,7 +637,6 @@ public class CameraActivity extends AppCompatActivity implements OnClickListener
                 List<Camera.Size> camSizes = camParams.getSupportedPreviewSizes();
                 break;
             case R.id.gallery_preview:
-                if ( !isFileExist() ) break;
                 Intent intent = new Intent(CameraActivity.this, Gallery.class);
                 startActivity(intent);
                 break;
